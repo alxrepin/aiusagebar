@@ -382,6 +382,12 @@ function ringOptions(): Array<[string, string]> {
 	return opts;
 }
 
+/** Preset thresholds, plus the current value if it was set to something custom. */
+function thresholdOptions(current: number) {
+	const presets = [5, 10, 15, 20, 25, 30, 50];
+	return presets.includes(current) ? presets : [...presets, current].sort((a, b) => a - b);
+}
+
 function renderSettings() {
 	const s = state!;
 	const refValue = (r: RingRef | null | undefined) => (r ? `${r.accountId}|${r.windowId}` : "");
@@ -467,6 +473,39 @@ function renderSettings() {
 					),
 				)
 			: null,
+		h(
+			"section",
+			{ class: "group" },
+			h("h3", null, t("alerts")),
+			h(
+				"div",
+				{ class: "list glass" },
+				h(
+					"label",
+					{ class: "row" },
+					h("div", { class: "row-text" }, h("div", { class: "name" }, t("alertLow"))),
+					h("input", {
+						type: "checkbox",
+						class: "switch",
+						checked: s.settings.alertsEnabled,
+						onChange: (e: Event) => act(() => bridge.request.updateSettings({ alertsEnabled: (e.target as HTMLInputElement).checked })),
+					}),
+				),
+				s.settings.alertsEnabled
+					? h(
+							"div",
+							{ class: "row" },
+							h("div", { class: "row-text" }, h("div", { class: "name" }, t("alertThreshold"))),
+							select(
+								String(s.settings.alertThreshold),
+								thresholdOptions(s.settings.alertThreshold).map((n) => [String(n), t("percentLeft", { n })]),
+								(v) => act(() => bridge.request.updateSettings({ alertThreshold: Number(v) })),
+							),
+						)
+					: null,
+				s.settings.alertsEnabled ? h("div", { class: "hint" }, t("alertThresholdHint")) : null,
+			),
+		),
 		h(
 			"section",
 			{ class: "group" },

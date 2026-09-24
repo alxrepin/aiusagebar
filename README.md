@@ -4,7 +4,7 @@
 
 # AIUsageBar
 
-**Лимиты ChatGPT и Claude в виде колец активности в строке меню и трее**
+**Your ChatGPT and Claude usage limits as activity rings in the menu bar / system tray**
 
 [![Build & Release](https://github.com/alxrepin/aiusagebar/actions/workflows/release.yml/badge.svg)](https://github.com/alxrepin/aiusagebar/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/alxrepin/aiusagebar?label=release&color=111)](https://github.com/alxrepin/aiusagebar/releases/latest)
@@ -12,161 +12,165 @@
 ![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-111?logo=apple)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-111?logo=windows)
 
-[**Скачать**](https://github.com/alxrepin/aiusagebar/releases/latest) · [Как это работает](#как-это-работает) · [Приватность](#приватность) · [Разработка](#разработка)
+[**Download**](https://github.com/alxrepin/aiusagebar/releases/latest) · [How it works](#how-it-works) · [Privacy](#privacy) · [Development](#development)
+
+**English** · [Русский](README.ru.md)
 
 </div>
 
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/ui-mac-two-light.png" width="260" alt="macOS, светлая тема" />
+  <img src="docs/screenshots/ui-mac-two-light.png" width="260" alt="macOS, light" />
   &nbsp;
-  <img src="docs/screenshots/ui-mac-two-dark.png" width="260" alt="macOS, тёмная тема" />
+  <img src="docs/screenshots/ui-mac-two-dark.png" width="260" alt="macOS, dark" />
   &nbsp;
-  <img src="docs/screenshots/ui-win-two-dark.png" width="260" alt="Windows 11, тёмная тема" />
+  <img src="docs/screenshots/ui-win-two-dark.png" width="260" alt="Windows 11, dark" />
 </p>
 
-Иконка в трее показывает, сколько лимита уже потрачено: чем больше заполнено кольцо, тем меньше осталось. Если кликнуть по иконке, откроется окно с каждым лимитом, процентами и временем до сброса.
+The tray icon shows how much of each limit you have used: the fuller the ring, the less is left. Click it for the details: every limit, the percentage used and when it resets.
 
 <p align="center">
-  <img src="docs/screenshots/tray-icons.png" width="620" alt="Варианты иконки в трее" />
+  <img src="docs/screenshots/tray-icons.png" width="620" alt="Tray icon variants" />
 </p>
 
-## Возможности
+## Features
 
-- **Кольца как в Apple Fitness.** Иконка монохромная, в ней от 1 до 3 концентрических колец. На macOS она перекрашивается вместе со строкой меню, на Windows подстраивается под тему панели задач.
-- **Раскладка колец выбирается сама:**
-  - подключён один провайдер: сессионный (5-часовой) и недельный лимит;
-  - подключено несколько: сессионный лимит каждого.
-- **Ручная настройка.** В любое кольцо можно поставить любую метрику любого аккаунта, например «Claude · Weekly · Opus».
-- **Подробности по клику:** проценты, прогресс-бары, «сброс через 2 ч 18 мин · 12:10», тариф (Plus, Pro, Max…).
-- **Фоновое обновление** раз в 1–30 минут. При открытии окна свежие данные подтягиваются сразу. Если API ответил ошибкой или «слишком много запросов», следующие попытки идут всё реже.
-- **Несколько провайдеров и аккаунтов.** Добавляются и удаляются в два клика.
-- **Выглядит как родное приложение:** Liquid Glass на macOS, Fluent на Windows 11, светлая и тёмная темы.
-- **Лёгкое приложение.** Сделано на [Electrobun](https://electrobun.dev) и системном WebView, без встроенного Chromium.
-- Интерфейс на русском и английском.
+- **Apple Fitness–style rings.** A monochrome icon with 1–3 concentric rings. On macOS it follows the menu bar appearance; on Windows it matches the taskbar theme.
+- **Smart default layout:**
+  - one provider connected: its session (5-hour) and weekly limits;
+  - several providers: the session limit of each.
+- **Fully customisable.** Put any metric of any account into any ring, e.g. "Claude · Weekly · Opus".
+- **Details on click:** percentages, progress bars, "resets in 2h 18m · 12:10", your plan (Plus, Pro, Max…).
+- **Low-limit alerts.** A system notification when less than a set share of a limit is left (15% by default). One notification per limit, re-armed after the limit resets. The threshold and the alerts themselves are configurable.
+- **Background refresh** every 1–30 minutes, plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
+- **Multiple providers and accounts**, added and removed in two clicks.
+- **Feels native:** Liquid Glass on macOS, Fluent on Windows 11, light and dark themes.
+- **Lightweight.** Built with [Electrobun](https://electrobun.dev) and the system WebView, no bundled Chromium.
+- English and Russian UI.
 
-## Установка
+## Install
 
-Скачайте файл для своей системы со [страницы релизов](https://github.com/alxrepin/aiusagebar/releases/latest).
+Grab the file for your system from the [Releases page](https://github.com/alxrepin/aiusagebar/releases/latest).
 
-| Система | Файл |
+| System | File |
 | --- | --- |
-| macOS (Apple Silicon) | `AIUsageBar-<версия>-macos-arm64.dmg` |
-| Windows 10 / 11 (x64) | `AIUsageBar-<версия>-windows-x64…` |
+| macOS (Apple Silicon) | `AIUsageBar-<version>-macos-arm64.dmg` |
+| Windows 10 / 11 (x64) | `AIUsageBar-<version>-windows-x64-Setup.zip` |
 
 <details>
-<summary><b>macOS: «приложение повреждено» или «не удаётся проверить разработчика»</b></summary>
+<summary><b>macOS: "app is damaged" or "developer cannot be verified"</b></summary>
 
-Релизы подписаны ad-hoc, но не нотаризованы Apple. После переноса в «Программы» выполните один раз:
+Releases are ad-hoc signed but not notarised by Apple. After moving the app to Applications, run once:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/AIUsageBar.app
 ```
 
-Можно и так: правый клик по приложению → «Открыть» → «Открыть».
+Or right-click the app → Open → Open.
 </details>
 
 <details>
-<summary><b>Windows: SmartScreen предупреждает о неизвестном издателе</b></summary>
+<summary><b>Windows: SmartScreen warns about an unknown publisher</b></summary>
 
-Нажмите «Подробнее» → «Выполнить в любом случае». Сборка не подписана сертификатом издателя.
+Click "More info" → "Run anyway". The build is not signed with a publisher certificate.
 </details>
 
-## Как это работает
+## How it works
 
-При первом запуске откройте окно и подключите провайдера. Для каждого есть два способа.
+On first launch, open the popover and connect a provider. Each provider offers two ways to sign in:
 
-| | Вход через браузер | Готовый логин CLI |
+| | Browser sign-in | Existing CLI login |
 | --- | --- | --- |
-| **Claude** | «Sign in with Claude»: откроется claude.ai | «Use Claude Code login»: берётся вход `claude` CLI |
-| **ChatGPT** | «Sign in with ChatGPT»: откроется chatgpt.com | «Use Codex CLI login»: берётся `~/.codex/auth.json` |
+| **Claude** | "Sign in with Claude" opens claude.ai | "Use Claude Code login" reuses the `claude` CLI sign-in |
+| **ChatGPT** | "Sign in with ChatGPT" opens chatgpt.com | "Use Codex CLI login" reuses `~/.codex/auth.json` |
 
-**Вход через браузер** использует OAuth 2.0 с PKCE. Приложение ненадолго слушает `localhost`, браузер возвращает туда код авторизации, и приложение само обменивает его на токены. Токены потом обновляются автоматически. Сервер-посредник не нужен.
+**Browser sign-in** is OAuth 2.0 with PKCE. The app briefly listens on `localhost`, the browser redirects the authorization code there, and the app exchanges it for tokens itself. Tokens are refreshed automatically. No intermediate server.
 
-**Готовый логин CLI** только читается: токены Claude Code или Codex не меняются, и CLI продолжает работать как раньше.
+**CLI login** is read-only: AIUsageBar never rotates Claude Code or Codex tokens, so your CLI keeps working.
 
-Откуда берутся лимиты — из тех же эндпоинтов, что используют официальные CLI:
+Limits come from the same endpoints the official CLIs use:
 
-- Claude: `api.anthropic.com/api/oauth/usage`, отдаёт 5-часовой лимит, недельный и отдельно по Opus и Sonnet;
-- ChatGPT: `chatgpt.com/backend-api/wham/usage`, отдаёт основное и дополнительное окно лимитов.
+- Claude: `api.anthropic.com/api/oauth/usage` — 5-hour, weekly, and per-model (Opus / Sonnet) limits;
+- ChatGPT: `chatgpt.com/backend-api/wham/usage` — primary and secondary rate-limit windows.
 
 > [!NOTE]
-> Эти эндпоинты не входят в публичный API и могут измениться. Адреса вынесены в константы `CLAUDE_OAUTH` и `CHATGPT_OAUTH`, чтобы их легко было поправить.
+> These endpoints are not part of a public API and may change. Their URLs live in the `CLAUDE_OAUTH` and `CHATGPT_OAUTH` constants so they are easy to update.
 
-## Приватность
+## Privacy
 
-- **Сервера нет.** Приложение обращается только к OpenAI и Anthropic, прямо с вашего компьютера.
-- **Нет телеметрии и аналитики.**
-- **Токены лежат в системном хранилище секретов**, а в файле настроек их нет:
+- **No server.** The app only talks to OpenAI and Anthropic, directly from your computer.
+- **No telemetry or analytics.**
+- **Tokens live in the OS secret store**, never in the settings file:
 
-  | Система | Где хранятся токены |
+  | System | Where tokens are stored |
   | --- | --- |
-  | macOS | Связка ключей (login Keychain), сервис `AIUsageBar` |
-  | Windows | Файл, зашифрованный DPAPI для текущего пользователя |
-  | Linux | Secret Service / libsecret, без него — файл с правами `0600` |
+  | macOS | login Keychain, service `AIUsageBar` |
+  | Windows | a file encrypted with DPAPI for the current user |
+  | Linux | Secret Service / libsecret, falling back to a `0600` file |
 
-- Когда вы удаляете аккаунт в настройках, его токены удаляются из хранилища.
+- Removing an account in Settings deletes its tokens from the store.
 
-## Настройки
+## Settings
 
-Шестерёнка в окне открывает настройки:
+The gear icon in the popover opens Settings:
 
-- **Аккаунты:** список подключённых, удалить, добавить новый;
-- **Кольца:** «Авто» или «Вручную» — выбор метрики для внешнего, среднего и внутреннего кольца;
-- **Обновлять каждые** 1, 2, 5, 10, 15 или 30 минут;
-- **Иконка в трее** (Windows и Linux): как панель задач, белая или чёрная;
-- **% в строке меню** (macOS): процент рядом с иконкой.
+- **Accounts:** connected accounts, remove, add new;
+- **Rings:** "Auto" or "Custom" — pick the metric for the outer, middle and inner ring;
+- **Notifications:** turn low-limit alerts on or off and choose the threshold — 5, 10, 15, 20, 25, 30 or 50% left (default 15%);
+- **Refresh every** 1, 2, 5, 10, 15 or 30 minutes;
+- **Tray icon** (Windows / Linux): match taskbar, white or black;
+- **% in menu bar** (macOS): show a percentage next to the icon.
 
-## Разработка
+## Development
 
-Нужен [Bun](https://bun.sh) версии 1.3 или новее.
+Requires [Bun](https://bun.sh) 1.3 or newer.
 
 ```sh
 git clone https://github.com/alxrepin/aiusagebar && cd aiusagebar
 bun install
 
-bun run dev          # собрать и запустить приложение
-bun test             # юнит-тесты
-bun run typecheck    # проверка типов
-bun run preview      # окно в обычном браузере с тестовыми данными
+bun run dev          # build and launch the app
+bun test             # unit tests
+bun run typecheck    # type checking
+bun run preview      # the popover in a regular browser with mock data
                      # → http://localhost:5173/?platform=mac|win|linux&scenario=two|one|empty
-bun run build:stable # установщик для текущей ОС → artifacts/
+bun run build:stable # installer for the current OS → artifacts/
 ```
 
-### Архитектура
+### Architecture
 
 ```
 src/
-├─ shared/            типы и RPC-контракт между Bun и webview
-├─ bun/               главный процесс
-│  ├─ providers/      UsageProvider + реализации claude/ и chatgpt/
-│  ├─ auth/           PKCE, loopback-листенер для OAuth
-│  ├─ usage/          сервис аккаунтов и обновления, логика колец
-│  ├─ store/          config.json и хранилище секретов
-│  ├─ tray/           растеризатор колец → PNG, контроллер иконки
-│  └─ popover/        окно у иконки и расчёт его позиции
-└─ views/popover/     интерфейс окна (TypeScript + DOM, без фреймворка)
+├─ shared/            types and the RPC contract between Bun and the webview
+├─ bun/               main process
+│  ├─ providers/      UsageProvider + claude/ and chatgpt/ implementations
+│  ├─ auth/           PKCE, loopback listener for OAuth
+│  ├─ usage/          accounts & refresh service, rings, low-limit alerts
+│  ├─ store/          config.json and the secret store
+│  ├─ tray/           ring rasteriser → PNG, tray icon controller
+│  └─ popover/        the popover window and its positioning
+└─ views/popover/     popover UI (TypeScript + DOM, no framework)
 ```
 
-Логика не зависит от Electrobun и покрыта тестами через `bun test`. От Electrobun зависят только `index.ts`, `popover.ts`, `trayController.ts` и `bridge.ts`.
+The logic doesn't depend on Electrobun and is covered by `bun test`. Only `index.ts`, `popover.ts`, `trayController.ts` and `bridge.ts` touch Electrobun.
 
-### Как добавить провайдера
+### Adding a provider
 
-Пусть это будет, например, Gemini. Нужно сделать две вещи.
+Say you want Gemini. Two steps:
 
-**1.** Реализовать `UsageProvider` в `src/bun/providers/gemini/index.ts`:
+**1.** Implement `UsageProvider` in `src/bun/providers/gemini/index.ts`:
 
 ```ts
 export class GeminiProvider implements UsageProvider {
   id = "gemini";
   displayName = "Gemini";
-  iconPath = "M…";  // SVG path, 24×24, монохромный
+  iconPath = "M…";  // SVG path, 24×24, monochrome
   authMethods = [{ id: "oauth", label: "Sign in with Google", description: "…", kind: "browser" as const }];
 
   async authenticate(methodId, ctx) {
-    // createPkce(), startLoopback() и ctx.openUrl уже готовы
-    return { credentials: { … }, label: "me@gmail.com", identity: "<стабильный id>" };
+    // createPkce(), startLoopback() and ctx.openUrl are ready to use
+    return { credentials: { … }, label: "me@gmail.com", identity: "<stable id>" };
   }
 
   async fetchUsage(credentials, ctx) {
@@ -177,35 +181,35 @@ export class GeminiProvider implements UsageProvider {
           { id: "session", label: "Daily", shortLabel: "1d", kind: "short", usedPercent: 40, resetsAt: "…" },
         ],
       },
-      credentials: rotated,  // если токены обновились
+      credentials: rotated,  // if tokens were refreshed
     };
   }
 }
 ```
 
-**2.** Добавить `new GeminiProvider()` в `src/bun/providers/registry.ts`.
+**2.** Add `new GeminiProvider()` to `src/bun/providers/registry.ts`.
 
-Кнопки входа, карточки, выбор колец, фоновое обновление и хранение токенов заработают сами. Чтобы в карточке появилась кнопка «Войти заново», бросьте `ReauthRequiredError`. Чтобы включилась пауза между повторами, бросьте `RateLimitedError`.
+Sign-in buttons, cards, ring selection, alerts, background refresh and token storage all work automatically. Throw `ReauthRequiredError` to show a "Sign in again" button on the card; throw `RateLimitedError` to back off.
 
-### Релизы
+### Releases
 
-Сборки и релизы делает GitHub Actions ([`release.yml`](.github/workflows/release.yml)):
+Builds and releases run on GitHub Actions ([`release.yml`](.github/workflows/release.yml)):
 
-1. Каждый push в `main` запускает проверку типов и тесты, затем сборку под **macOS (arm64)** и **Windows (x64)**.
-2. Если версии из `package.json` ещё нет среди тегов, создаётся релиз `vX.Y.Z` с установщиками и автоматическими release notes.
+1. Every push to `main` runs the type check and tests, then builds for **macOS (arm64)** and **Windows (x64)**.
+2. If the version in `package.json` has no tag yet, a `vX.Y.Z` release is published with the installers and generated release notes.
 
-Чтобы выпустить новую версию, поднимите `version` в `package.json` и смёржите изменения в `main`.
+To ship a new version, bump `version` in `package.json` and merge into `main`.
 
-Подпись и нотаризация Apple необязательны. Чтобы их включить, добавьте в секреты репозитория `ELECTROBUN_DEVELOPER_ID`, `ELECTROBUN_TEAMID`, `ELECTROBUN_APPLEID` и `ELECTROBUN_APPLEIDPASS`.
+Apple signing and notarisation are optional. To enable them, add `ELECTROBUN_DEVELOPER_ID`, `ELECTROBUN_TEAMID`, `ELECTROBUN_APPLEID` and `ELECTROBUN_APPLEIDPASS` as repository secrets.
 
-### Известные ограничения
+### Known limitations
 
-- **Размытие под окном.** Liquid Glass сделан средствами CSS. Размывать сам рабочий стол за окном (`NSGlassEffectView`, Mica/Acrylic) Electrobun 1.x не умеет.
-- **Linux.** Многие реализации AppIndicator не передают обычный клик, поэтому у иконки есть меню.
-- **Не реализовано:** автозапуск при входе в систему и сборка для Intel Mac.
+- **No blur behind the window.** Liquid Glass is done in CSS; Electrobun 1.x can't blur the desktop behind a window (`NSGlassEffectView`, Mica/Acrylic).
+- **Linux.** Many AppIndicator implementations don't deliver plain clicks, so the icon has a menu.
+- **Not yet:** launch at login and an Intel Mac build.
 
-## Лицензия
+## License
 
-[MIT](LICENSE). Используйте, меняйте и распространяйте свободно.
+[MIT](LICENSE). Use, modify and share freely.
 
-AIUsageBar — независимый проект, он не связан с OpenAI и Anthropic. ChatGPT и Claude — товарные знаки соответствующих владельцев.
+AIUsageBar is an independent project and is not affiliated with OpenAI or Anthropic. ChatGPT and Claude are trademarks of their respective owners.

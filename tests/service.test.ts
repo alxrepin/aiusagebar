@@ -133,3 +133,32 @@ describe("UsageService", () => {
 		expect(Object.values(reloaded.data.usage)[0]?.windows).toHaveLength(2);
 	});
 });
+
+describe("UsageService alerts", () => {
+	test("notifies once when a limit drops below the threshold and persists that", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "aiub-"));
+		const config = new ConfigStore(join(dir, "config.json"));
+		const notes: string[] = [];
+		const service = new UsageService({
+			config,
+			secrets: new MemoryStore(),
+			platform: "mac",
+			notify: (title) => notes.push(title),
+			baseContext: { openUrl() {}, fetch, homeDir: dir, platform: "darwin" },
+		});
+		used = 50;
+		await service.startAuth("fake", "token");
+		expect(notes).toEqual([]);
+
+		used = 90; // 10% left on the session window
+		await service.refreshAll({ force: true });
+		await service.refreshAll({ force: true });
+		expect(notes).toHaveLength(1);
+		expect(notes[0]).toMatch(/Fake/);
+		expect(config.data.alerted).toEqual([expect.stringMatching(/\|session$/)]);
+
+		// Raising the threshold re-checks the data we already have: weekly is at 45% used → 55% left.
+		await service.updateSettings({ alertThreshold: 60 });
+		expect(notes).toHaveLength(2);
+	});
+});

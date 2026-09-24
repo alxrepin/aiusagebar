@@ -24,6 +24,7 @@ const service = new UsageService({
 	config,
 	secrets: createSecretStore(dataDir),
 	platform,
+	notify: (title, body) => Utils.showNotification({ title, body }),
 	baseContext: {
 		openUrl: (url) => Utils.openExternal(url),
 		fetch,

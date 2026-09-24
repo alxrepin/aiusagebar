@@ -8,6 +8,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	rings: [null, null, null],
 	iconTheme: "auto",
 	showPercentInMenuBar: false,
+	alertsEnabled: true,
+	alertThreshold: 15,
 };
 
 export interface ConfigFile {
@@ -16,11 +18,13 @@ export interface ConfigFile {
 	accounts: AccountInfo[];
 	/** Last known usage, so the icon is meaningful right after launch. */
 	usage: Record<string, UsageSnapshot>;
+	/** Limits that are currently below the alert threshold and were already notified ("accountId|windowId"). */
+	alerted: string[];
 }
 
 /** Non-secret app state persisted as JSON. Tokens live in the SecretStore. */
 export class ConfigStore {
-	data: ConfigFile = { version: 1, settings: { ...DEFAULT_SETTINGS }, accounts: [], usage: {} };
+	data: ConfigFile = { version: 1, settings: { ...DEFAULT_SETTINGS }, accounts: [], usage: {}, alerted: [] };
 	private writing: Promise<void> = Promise.resolve();
 
 	constructor(readonly path: string) {}
@@ -35,6 +39,7 @@ export class ConfigStore {
 					settings: normalizeSettings(raw.settings),
 					accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
 					usage: raw.usage && typeof raw.usage === "object" ? raw.usage : {},
+					alerted: Array.isArray(raw.alerted) ? raw.alerted.filter((k) => typeof k === "string") : [],
 				};
 			} catch (err) {
 				console.warn("[config] could not parse, starting fresh:", err);
@@ -61,6 +66,8 @@ export function normalizeSettings(raw: Partial<Settings> | undefined): Settings 
 	s.refreshMinutes = Math.min(60, Math.max(1, Number(s.refreshMinutes) || DEFAULT_SETTINGS.refreshMinutes));
 	if (s.ringMode !== "auto" && s.ringMode !== "custom") s.ringMode = "auto";
 	if (!["auto", "light", "dark"].includes(s.iconTheme)) s.iconTheme = "auto";
+	s.alertsEnabled = s.alertsEnabled !== false;
+	s.alertThreshold = Math.min(99, Math.max(1, Math.round(Number(s.alertThreshold) || DEFAULT_SETTINGS.alertThreshold)));
 	const rings = Array.isArray(s.rings) ? s.rings.slice(0, 3) : [];
 	while (rings.length < 3) rings.push(null);
 	s.rings = rings.map((r) => (r && typeof r.accountId === "string" && typeof r.windowId === "string" ? r : null));
