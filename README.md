@@ -43,6 +43,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Ring colour per provider.** Monochrome by default (it follows the menu bar / taskbar like system icons); pick a preset (Apple Fitness red, green, cyan…) or any custom colour. Applies to the tray icon, the rings and the progress bars.
 - **Fully customisable.** Put any metric of any account into any ring, e.g. "Claude · Weekly · Opus".
 - **Details on click:** percentages, progress bars, "resets in 2h 18m · 12:10", your plan (Plus, Pro, Max…).
+- **Tooltip on Windows:** hover the tray icon to see the percentage used and time to reset for every account.
 - **Low-limit alerts.** A system notification when less than a set share of a limit is left (15% by default). One notification per limit, re-armed after the limit resets. The threshold and the alerts themselves are configurable.
 - **Background refresh** every minute by default (1–30 min, configurable), plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
 - **Multiple providers and accounts**, including several accounts of the same provider (e.g. work and personal Claude), added and removed in two clicks.
