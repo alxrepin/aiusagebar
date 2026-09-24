@@ -853,14 +853,15 @@ function render() {
 }
 
 // Tell the host how tall we are so the native window hugs the content.
-const PADDING = 2 * parseInt(getComputedStyle(document.documentElement).getPropertyValue("--window-pad") || "0", 10);
+// (--window-pad depends on data-platform, which is set on the first render.)
+const windowPadding = () => 2 * parseInt(getComputedStyle(document.documentElement).getPropertyValue("--window-pad") || "0", 10);
 let lastHeight = 0;
 new ResizeObserver(() => {
 	const frame = getComputedStyle(panel);
 	const inner = getComputedStyle(scroller);
 	const chrome =
 		parseFloat(frame.borderTopWidth) + parseFloat(frame.borderBottomWidth) + parseFloat(inner.paddingTop) + parseFloat(inner.paddingBottom);
-	const height = Math.ceil(content.offsetHeight + chrome + PADDING);
+	const height = Math.ceil(content.offsetHeight + chrome + windowPadding());
 	if (Math.abs(height - lastHeight) > 1) {
 		lastHeight = height;
 		bridge.send.resize({ height });

@@ -145,6 +145,26 @@
 }
 
 
+/* The Windows popover is an opaque, native-shaped window (Electrobun's
+   transparent windows break hit-testing there), so the panel fills it edge
+   to edge; Windows 11 rounds the corners and draws the border itself. */
+:root[data-platform="win"] {
+	--window-pad: 0px;
+	--panel-radius: 0;
+	--panel-border: none;
+	--panel-shadow: none;
+	--panel-bg: rgb(243 243 243);
+}
+
+:root[data-platform="win"][data-theme="dark"] {
+	--panel-bg: rgb(32 32 32);
+}
+
+:root[data-platform="win"],
+:root[data-platform="win"] body {
+	background: var(--panel-bg);
+}
+
 /* ---------- Linux ---------- */
 
 :root[data-platform="linux"] {
