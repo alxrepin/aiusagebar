@@ -187,3 +187,22 @@ describe("UsageService reconnect", () => {
 		expect(notes.filter((n) => /sign in again|войти заново/.test(n))).toHaveLength(2);
 	});
 });
+
+describe("settings migration", () => {
+	test("default refresh is 1 minute; old default 5 migrates, manual choices stay", async () => {
+		const { normalizeSettings, migrateSettings } = await import("../src/bun/store/config");
+		expect(normalizeSettings(undefined).refreshMinutes).toBe(1);
+		expect(migrateSettings(1, { refreshMinutes: 5 })?.refreshMinutes).toBe(1);
+		expect(migrateSettings(undefined, { refreshMinutes: 5 })?.refreshMinutes).toBe(1);
+		expect(migrateSettings(1, { refreshMinutes: 10 })?.refreshMinutes).toBe(10);
+		expect(migrateSettings(2, { refreshMinutes: 5 })?.refreshMinutes).toBe(5);
+
+		const dir = mkdtempSync(join(tmpdir(), "aiub-"));
+		const path = join(dir, "config.json");
+		await Bun.write(path, JSON.stringify({ version: 1, settings: { refreshMinutes: 5 }, accounts: [], usage: {} }));
+		const store = new ConfigStore(path);
+		await store.load();
+		expect(store.data.settings.refreshMinutes).toBe(1);
+		expect(store.data.version).toBe(2);
+	});
+});

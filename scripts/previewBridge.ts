@@ -40,7 +40,7 @@ if (scenario === "two") {
 	};
 }
 
-const settings: AppState["settings"] = { refreshMinutes: 5, ringMode: "auto", rings: [null, null, null], iconTheme: "auto", showPercentInMenuBar: false, alertsEnabled: true, alertThreshold: 15, launchAtLogin: true, providerColors: q.get("colors") ? { claude: "#ff9f0a", chatgpt: "#30d158" } : {} };
+const settings: AppState["settings"] = { refreshMinutes: 1, ringMode: "auto", rings: [null, null, null], iconTheme: "auto", showPercentInMenuBar: false, alertsEnabled: true, alertThreshold: 15, launchAtLogin: true, providerColors: q.get("colors") ? { claude: "#ff9f0a", chatgpt: "#30d158" } : {} };
 
 const state = (): AppState => ({
 	platform,

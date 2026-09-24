@@ -44,7 +44,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Fully customisable.** Put any metric of any account into any ring, e.g. "Claude · Weekly · Opus".
 - **Details on click:** percentages, progress bars, "resets in 2h 18m · 12:10", your plan (Plus, Pro, Max…).
 - **Low-limit alerts.** A system notification when less than a set share of a limit is left (15% by default). One notification per limit, re-armed after the limit resets. The threshold and the alerts themselves are configurable.
-- **Background refresh** every 1–30 minutes, plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
+- **Background refresh** every minute by default (1–30 min, configurable), plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
 - **Multiple providers and accounts**, including several accounts of the same provider (e.g. work and personal Claude), added and removed in two clicks.
 - **Self-healing connections.** Expired tokens are refreshed automatically (on 401 and 403). If a sign-in really is gone, the card shows "Sign in again" and you get a single notification. After sleep or a network change the data refreshes right away.
 - **Starts with your computer** (can be turned off in Settings).
