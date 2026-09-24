@@ -76,3 +76,26 @@ test("download progress is reported only while downloading", async () => {
 	await installing;
 	expect(c.state).toMatchObject({ status: "installing", progress: 100 });
 });
+
+test("reminds again after a day while the update stays uninstalled", async () => {
+	let now = Date.parse("2026-09-24T10:00:00Z");
+	const notes: string[] = [];
+	const c = new UpdateController({
+		feed: {
+			currentVersion: async () => "0.5.0",
+			check: async () => ({ updateAvailable: true, version: "0.6.0" }),
+			download: async () => {},
+			apply: async () => {},
+		},
+		onChange: () => {},
+		notify: (_, body) => notes.push(body),
+		now: () => now,
+	});
+	await c.check(); // first time → notify
+	now += 3600_000;
+	await c.check(); // an hour later → quiet
+	expect(notes).toHaveLength(1);
+	now += 24 * 3600_000;
+	await c.check(); // a day later → remind
+	expect(notes).toHaveLength(2);
+});

@@ -14,8 +14,10 @@ export interface UpdateControllerDeps {
 	feed: UpdateFeed;
 	onChange: (state: UpdateState) => void;
 	notify?: (title: string, body: string) => void;
-	/** Background check interval. */
+	/** Background check interval (default: hourly). */
 	intervalMs?: number;
+	/** Remind again about the same version after this long (default: daily). */
+	remindAfterMs?: number;
 	now?: () => number;
 }
 
@@ -35,14 +37,14 @@ const ru = () => {
 export class UpdateController {
 	state: UpdateState = { currentVersion: "", status: "idle" };
 	private timer: ReturnType<typeof setInterval> | null = null;
-	private notifiedVersion?: string;
+	private notified?: { version: string; at: number };
 
 	constructor(private deps: UpdateControllerDeps) {}
 
 	async start(initialDelayMs = 15_000) {
 		this.set({ currentVersion: await this.deps.feed.currentVersion().catch(() => "") });
 		setTimeout(() => void this.check(), initialDelayMs);
-		this.timer = setInterval(() => void this.check(), this.deps.intervalMs ?? 6 * 3600_000);
+		this.timer = setInterval(() => void this.check(), this.deps.intervalMs ?? 3600_000);
 	}
 
 	stop() {
@@ -65,8 +67,11 @@ export class UpdateController {
 			} else if (r.updateAvailable) {
 				this.set({ status: "available", availableVersion: r.version, checkedAt });
 				const v = r.version ?? "";
-				if (this.notifiedVersion !== v) {
-					this.notifiedVersion = v;
+				// Notify for a new version, and remind once a day while it stays uninstalled.
+				const now = this.deps.now?.() ?? Date.now();
+				const remindAfter = this.deps.remindAfterMs ?? 24 * 3600_000;
+				if (!this.notified || this.notified.version !== v || now - this.notified.at >= remindAfter) {
+					this.notified = { version: v, at: now };
 					this.deps.notify?.(
 						"AIUsageBar",
 						ru() ? `Доступна новая версия${v ? ` ${v}` : ""}. Откройте AIUsageBar, чтобы обновиться.` : `Version${v ? ` ${v}` : ""} is available. Open AIUsageBar to update.`,

@@ -48,7 +48,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Multiple providers and accounts**, including several accounts of the same provider (e.g. work and personal Claude), added and removed in two clicks.
 - **Self-healing connections.** Expired tokens are refreshed automatically (on 401 and 403). If a sign-in really is gone, the card shows "Sign in again" and you get a single notification. After sleep or a network change the data refreshes right away.
 - **Starts with your computer** (can be turned off in Settings).
-- **Automatic updates.** The app checks GitHub Releases every few hours, shows an "Update" button and restarts into the new version.
+- **Automatic updates.** The app checks GitHub Releases in the background every hour. When a new version is out you get a notification (repeated once a day until you update) and an "Update" button that restarts into the new version.
 - **Feels native:** Liquid Glass on macOS, Fluent on Windows 11, light and dark themes.
 - **Lightweight.** Built with [Electrobun](https://electrobun.dev) and the system WebView, no bundled Chromium.
 - English and Russian UI.
