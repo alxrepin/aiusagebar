@@ -60,3 +60,19 @@ test("feed errors are surfaced, not thrown", async () => {
 	await d.c.install();
 	expect(d.c.state).toMatchObject({ status: "error", error: "disk full", availableVersion: "1.0.0" });
 });
+
+test("download progress is reported only while downloading", async () => {
+	let release!: () => void;
+	const { c } = setup(async () => ({ updateAvailable: true, version: "0.5.0" }), {
+		download: () => new Promise<void>((r) => (release = r)),
+	});
+	c.setProgress(50);
+	expect(c.state.progress).toBeUndefined();
+	await c.check();
+	const installing = c.install();
+	c.setProgress(41.6);
+	expect(c.state).toMatchObject({ status: "downloading", progress: 42 });
+	release();
+	await installing;
+	expect(c.state).toMatchObject({ status: "installing", progress: 100 });
+});

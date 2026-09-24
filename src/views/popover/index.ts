@@ -270,11 +270,9 @@ function renderUpdateBanner() {
 	if (!visible) return null;
 	const busy = u.status === "downloading" || u.status === "installing";
 	const text =
-		u.status === "downloading"
-			? t("updateDownloading")
-			: u.status === "installing"
-				? t("updateInstalling")
-				: u.status === "error"
+		busy
+			? updateProgressText(u)
+			: u.status === "error"
 					? t("updateFailed", { e: u.error ?? "" })
 					: u.availableVersion
 						? t("updateAvailable", { v: u.availableVersion })
@@ -284,7 +282,7 @@ function renderUpdateBanner() {
 		{ class: "banner glass" },
 		busy ? h("span", { class: "spinner" }) : icon(ICONS.download),
 		h("span", { class: "banner-text" }, text),
-		busy ? null : h("button", { class: "btn small primary", onClick: () => act(() => bridge.request.installUpdate({})) }, t("updateNow")),
+		busy ? null : h("button", { class: "btn small primary", onClick: () => runUpdateAction("install") }, t("updateNow")),
 	);
 }
 
@@ -431,18 +429,32 @@ function ringOptions(): Array<[string, string]> {
 	return opts;
 }
 
+/** Show the spinner immediately on click, before the host reports back. */
+function runUpdateAction(action: "check" | "install") {
+	const u = state!.update;
+	state = { ...state!, update: { ...u, status: action === "check" ? "checking" : "downloading", progress: undefined, error: undefined } };
+	render();
+	void act(() => (action === "check" ? bridge.request.checkForUpdates({}) : bridge.request.installUpdate({})));
+}
+
+function updateProgressText(u: AppState["update"]) {
+	if (u.status === "downloading") return `${t("updateDownloading")}${u.progress != null ? ` ${u.progress}%` : ""}`;
+	if (u.status === "installing") return t("updateInstalling");
+	return t("checking");
+}
+
 function renderAbout() {
 	const u = state!.update;
-	const status =
-		u.status === "checking"
-			? t("checking")
-			: u.status === "none"
-				? t("upToDate")
-				: u.status === "available"
-					? t("updateAvailable", { v: u.availableVersion ?? "" })
-					: u.status === "error"
-						? t("updateFailed", { e: u.error ?? "" })
-						: "";
+	const busy = u.status === "checking" || u.status === "downloading" || u.status === "installing";
+	const status = busy
+		? updateProgressText(u)
+		: u.status === "none"
+			? t("upToDate")
+			: u.status === "available"
+				? t("updateAvailable", { v: u.availableVersion ?? "" })
+				: u.status === "error"
+					? t("updateFailed", { e: u.error ?? "" })
+					: "";
 	return h(
 		"section",
 		{ class: "group" },
@@ -459,15 +471,24 @@ function renderAbout() {
 					h("div", { class: "name" }, t("version", { v: u.currentVersion || "—" })),
 					status ? h("div", { class: "sub" }, status) : null,
 				),
-				u.status === "available"
-					? h("button", { class: "btn small primary", onClick: () => act(() => bridge.request.installUpdate({})) }, t("updateNow"))
-					: h(
-							"button",
-							{ class: "btn small", disabled: u.status === "checking" || u.status === "downloading", onClick: () => act(() => bridge.request.checkForUpdates({})) },
-							t("checkUpdates"),
-						),
+				busy
+					? h("span", { class: "spinner", title: status })
+					: u.status === "available"
+						? h("button", { class: "btn small primary", onClick: () => runUpdateAction("install") }, t("updateNow"))
+						: h("button", { class: "btn small", onClick: () => runUpdateAction("check") }, t("checkUpdates")),
 			),
+			u.status === "downloading" || u.status === "installing" ? renderUpdateProgress(u) : null,
 		),
+	);
+}
+
+/** Thin bar under the row; indeterminate until the download size is known. */
+function renderUpdateProgress(u: AppState["update"]) {
+	const known = u.progress != null;
+	return h(
+		"div",
+		{ class: "update-progress" },
+		h("div", { class: known ? "bar" : "bar indeterminate" }, h("i", { style: known ? `width:${u.progress}%` : "" })),
 	);
 }
 

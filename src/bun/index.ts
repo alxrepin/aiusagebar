@@ -53,6 +53,11 @@ const updates = new UpdateController({
 	notify: (title, body) => Utils.showNotification({ title, body }),
 });
 
+Updater.onStatusChange((entry) => {
+	const progress = (entry.details as { progress?: number } | undefined)?.progress;
+	if (entry.status === "download-progress" && typeof progress === "number") updates.setProgress(progress);
+});
+
 const tray = new TrayController(platform, cacheDir);
 const popover = new Popover(platform, service, updates, () => tray.tray.getBounds());
 

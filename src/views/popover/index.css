@@ -853,3 +853,23 @@ body {
 	flex-direction: column;
 	align-items: stretch;
 }
+
+/* ---------- update progress ---------- */
+
+.update-progress {
+	padding: 0 12px 10px;
+}
+
+.bar.indeterminate i {
+	width: 35%;
+	animation: indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(290%);
+	}
+}
