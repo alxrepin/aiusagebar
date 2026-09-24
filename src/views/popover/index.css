@@ -24,7 +24,9 @@
 	--panel-radius: 14px;
 	--panel-bg: rgb(250 250 250);
 	--panel-border: 1px solid var(--hair);
-	--panel-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+	/* Keep offset + blur within --window-pad: the native window is only that much
+	   larger than the panel, and anything beyond is clipped into a visible box. */
+	--panel-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.1), 0 2px 6px rgb(0 0 0 / 0.14);
 
 	--card-radius: 10px;
 	--card-bg: rgb(var(--ink) / 0.04);
@@ -47,7 +49,7 @@
 		--ink: 255 255 255;
 		--panel-bg: rgb(36 36 38);
 		--primary-fg: rgb(20 20 20);
-		--panel-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+		--panel-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
 	}
 }
 
@@ -65,7 +67,7 @@
 	--panel-border: 0.5px solid rgb(255 255 255 / 0.75);
 	--panel-shadow:
 		0 0 0 0.5px rgb(0 0 0 / 0.12),
-		0 18px 44px -8px rgb(0 0 0 / 0.28),
+		0 2px 6px rgb(0 0 0 / 0.14),
 		inset 0 1px 1.5px rgb(255 255 255 / 0.95),
 		inset 0 -1px 1px rgb(255 255 255 / 0.35);
 
@@ -88,7 +90,7 @@
 		--panel-border: 0.5px solid rgb(255 255 255 / 0.22);
 		--panel-shadow:
 			0 0 0 0.5px rgb(0 0 0 / 0.6),
-			0 18px 44px -8px rgb(0 0 0 / 0.6),
+			0 2px 6px rgb(0 0 0 / 0.4),
 			inset 0 1px 1px rgb(255 255 255 / 0.22),
 			inset 0 -1px 1px rgb(255 255 255 / 0.06);
 		--card-bg: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.05));
@@ -110,7 +112,7 @@
 	--panel-radius: 8px;
 	--panel-bg: rgb(243 243 243 / 0.97);
 	--panel-border: 1px solid rgb(0 0 0 / 0.1);
-	--panel-shadow: 0 8px 16px rgb(0 0 0 / 0.14), 0 0 2px rgb(0 0 0 / 0.1);
+	--panel-shadow: 0 2px 6px rgb(0 0 0 / 0.14), 0 0 2px rgb(0 0 0 / 0.1);
 	--card-radius: 6px;
 	--card-bg: rgb(255 255 255 / 0.72);
 	--card-border: 1px solid rgb(0 0 0 / 0.06);
@@ -126,7 +128,7 @@
 	:root[data-platform="win"] {
 		--panel-bg: rgb(32 32 32 / 0.97);
 		--panel-border: 1px solid rgb(255 255 255 / 0.08);
-		--panel-shadow: 0 8px 16px rgb(0 0 0 / 0.4), 0 0 2px rgb(0 0 0 / 0.4);
+		--panel-shadow: 0 2px 6px rgb(0 0 0 / 0.4), 0 0 2px rgb(0 0 0 / 0.4);
 		--card-bg: rgb(255 255 255 / 0.05);
 		--card-border: 1px solid rgb(0 0 0 / 0.1);
 		--ctl-bg: rgb(255 255 255 / 0.06);
