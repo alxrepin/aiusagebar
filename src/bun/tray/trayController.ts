@@ -3,9 +3,12 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { Tray } from "electrobun/bun";
 import type { AppState, IconTheme } from "../../shared/types";
+import { isRu } from "../i18n";
 import { setStatusItemTemplateImage } from "./macStatusImage";
 import { encodeIco } from "./png";
 import { hexToRgb, renderRingsPng, type RGB } from "./ringsIcon";
+import { trayTooltip } from "./tooltip";
+import { setTrayTooltip } from "./winTrayTip";
 
 type Platform = AppState["platform"];
 
@@ -22,6 +25,7 @@ export class TrayController {
 	private flip = false;
 	private lastKey = "";
 	private systemLight: { value: boolean; at: number } | null = null;
+	private lastTip = "";
 
 	constructor(
 		private platform: Platform,
@@ -62,7 +66,8 @@ export class TrayController {
 		const ink = await this.inkColor(state.settings.iconTheme, template);
 		const key = JSON.stringify([progress.map((p) => (p === null ? null : Math.round(p * 100))), ink, colors, template]);
 
-		if (key !== this.lastKey) {
+		const imageChanged = key !== this.lastKey;
+		if (imageChanged) {
 			this.lastKey = key;
 			await mkdir(this.cacheDir, { recursive: true });
 			// Alternate file names: some platforms cache images by path.
@@ -74,6 +79,16 @@ export class TrayController {
 			const done = this.platform === "mac" && setStatusItemTemplateImage(this.tray.ptr, file, size, size, template);
 			if (!done) this.tray.setImage(file);
 			await rm(join(this.cacheDir, `tray-${this.flip ? "b" : "a"}.${this.ext}`), { force: true });
+		}
+
+		// Windows: usage in the hover tooltip (the taskbar can't show text).
+		// Re-sent after every icon change, which resets Electrobun's (empty) tip.
+		if (this.platform === "win") {
+			const tip = trayTooltip(state, isRu());
+			if (imageChanged || tip !== this.lastTip) {
+				this.lastTip = tip;
+				setTrayTooltip(this.tray.ptr, tip);
+			}
 		}
 
 		if (this.platform === "mac") {
