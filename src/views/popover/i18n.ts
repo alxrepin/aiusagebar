@@ -32,6 +32,12 @@ const en = {
 	ringEmpty: "—",
 	general: "General",
 	launchAtLogin: "Launch at login",
+	language: "Language",
+	langSystem: "System",
+	appearance: "Appearance",
+	themeSystem: "System",
+	themeLight: "Light",
+	themeDark: "Dark",
 	refreshEvery: "Refresh every",
 	minutes: "{n} min",
 	trayIcon: "Tray icon",
@@ -103,6 +109,12 @@ const ru: Dict = {
 	ringEmpty: "—",
 	general: "Общее",
 	launchAtLogin: "Запуск при входе в систему",
+	language: "Язык",
+	langSystem: "Системный",
+	appearance: "Оформление",
+	themeSystem: "Системное",
+	themeLight: "Светлое",
+	themeDark: "Тёмное",
 	refreshEvery: "Обновлять каждые",
 	minutes: "{n} мин",
 	trayIcon: "Иконка в трее",
@@ -138,9 +150,21 @@ const ru: Dict = {
 	m: "мин",
 };
 
-const lang = (navigator.language || "en").toLowerCase();
-export const locale = lang.startsWith("ru") ? "ru" : "en";
-const dict: Dict = locale === "ru" ? ru : en;
+const systemLang = () => ((navigator.language || "en").toLowerCase().startsWith("ru") ? "ru" : "en");
+
+export let locale: "en" | "ru" = systemLang();
+let dict: Dict = locale === "ru" ? ru : en;
+/** BCP 47 tag for dates and relative times. Keeps the OS locale when it matches the chosen language. */
+let dateLocale = navigator.language;
+
+/** Apply the language setting ("system" follows the OS). */
+export function setLocale(pref: "system" | "en" | "ru") {
+	locale = pref === "system" ? systemLang() : pref;
+	dict = locale === "ru" ? ru : en;
+	const sys = navigator.language || "en-US";
+	dateLocale = sys.toLowerCase().startsWith(locale) ? sys : locale === "ru" ? "ru-RU" : "en-US";
+	document.documentElement.lang = locale;
+}
 
 export function t(key: keyof Dict, vars: Record<string, string | number> = {}): string {
 	return dict[key].replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
@@ -160,16 +184,16 @@ export function formatDuration(ms: number): string {
 export function formatResetAt(iso: string, now = Date.now()): string {
 	const date = new Date(iso);
 	const sameDay = new Date(now).toDateString() === date.toDateString();
-	const time = date.toLocaleTimeString(navigator.language, { hour: "2-digit", minute: "2-digit" });
+	const time = date.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
 	if (sameDay) return time;
-	return `${date.toLocaleDateString(navigator.language, { weekday: "short" })} ${time}`;
+	return `${date.toLocaleDateString(dateLocale, { weekday: "short" })} ${time}`;
 }
 
 export function formatAgo(iso: string | undefined, now = Date.now()): string {
 	if (!iso) return t("never");
 	const ms = now - Date.parse(iso);
 	if (ms < 60_000) return t("justNow");
-	const rtf = new Intl.RelativeTimeFormat(navigator.language, { numeric: "auto" });
+	const rtf = new Intl.RelativeTimeFormat(dateLocale, { numeric: "auto" });
 	const mins = Math.round(ms / 60_000);
 	return mins < 60 ? rtf.format(-mins, "minute") : rtf.format(-Math.round(mins / 60), "hour");
 }

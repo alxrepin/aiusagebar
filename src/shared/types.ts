@@ -78,6 +78,10 @@ export type RingMode = "auto" | "custom";
 
 export type IconTheme = "auto" | "light" | "dark";
 
+/** "system" follows the OS; otherwise a fixed choice. */
+export type LanguagePref = "system" | "en" | "ru";
+export type ThemePref = "system" | "light" | "dark";
+
 export interface Settings {
 	/** Background refresh interval in minutes. */
 	refreshMinutes: number;
@@ -96,6 +100,10 @@ export interface Settings {
 	launchAtLogin: boolean;
 	/** Ring colour per provider id ("#rrggbb"). Missing = default monochrome ink. */
 	providerColors: Record<string, string>;
+	/** UI + notification language. */
+	language: LanguagePref;
+	/** Popover appearance. */
+	theme: ThemePref;
 }
 
 /** A ring after resolution: what is actually drawn. */

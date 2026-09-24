@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	alertThreshold: 15,
 	launchAtLogin: true,
 	providerColors: {},
+	language: "system",
+	theme: "system",
 };
 
 export interface ConfigFile {
@@ -81,6 +83,8 @@ export function normalizeSettings(raw: Partial<Settings> | undefined): Settings 
 	if (!["auto", "light", "dark"].includes(s.iconTheme)) s.iconTheme = "auto";
 	s.alertsEnabled = s.alertsEnabled !== false;
 	s.launchAtLogin = s.launchAtLogin !== false;
+	if (!["system", "en", "ru"].includes(s.language)) s.language = "system";
+	if (!["system", "light", "dark"].includes(s.theme)) s.theme = "system";
 	const colors: Record<string, string> = {};
 	for (const [id, c] of Object.entries(s.providerColors && typeof s.providerColors === "object" ? s.providerColors : {})) {
 		if (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c)) colors[id] = c.toLowerCase();

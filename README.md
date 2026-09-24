@@ -51,7 +51,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Automatic updates.** The app checks GitHub Releases in the background every hour. When a new version is out you get a notification (repeated once a day until you update) and an "Update" button that restarts into the new version.
 - **Feels native:** Liquid Glass on macOS, Fluent on Windows 11, light and dark themes.
 - **Lightweight.** Built with [Electrobun](https://electrobun.dev) and the system WebView, no bundled Chromium.
-- English and Russian UI.
+- **English and Russian, light and dark.** Both follow the system by default and can be set manually in Settings.
 
 ## Install
 
@@ -147,6 +147,8 @@ The gear icon in the popover opens Settings:
 - **Rings:** "Auto" or "Custom" — pick the metric for the outer, middle and inner ring;
 - **Ring colours:** default monochrome, a preset or a custom colour for each connected provider;
 - **Notifications:** turn low-limit alerts on or off and choose the threshold — 5, 10, 15, 20, 25, 30 or 50% left (default 15%);
+- **Appearance:** system, light or dark;
+- **Language:** system, English or Russian (also used for notifications);
 - **Launch at login:** on by default;
 - **Refresh every** 1, 2, 5, 10, 15 or 30 minutes;
 - **Tray icon** (Windows / Linux): match taskbar, white or black;
