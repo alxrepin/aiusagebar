@@ -9,7 +9,20 @@ export interface RingsIconOptions {
 	color: [number, number, number];
 	/** Opacity of the unfilled track. */
 	trackAlpha?: number;
+	/** "bold" = chunky Fitness rings (app UI, small Windows tray); "thin" = menu-bar weight. */
+	weight?: RingWeight;
+	/** Stored in the PNG so macOS picks the right point size (use 144 for @2x). */
+	dpi?: number;
 }
+
+export type RingWeight = "bold" | "thin";
+
+// Stroke widths, gaps and outer margin on a 44px reference canvas, per ring count (1, 2, 3).
+const WEIGHTS: Record<RingWeight, { width: number[]; gap: number[]; margin: number }> = {
+	bold: { width: [8.5, 7, 5.5], gap: [0, 2, 1.5], margin: 0.75 },
+	// Matches SF Symbols' visual weight next to other menu bar icons.
+	thin: { width: [5.2, 4.6, 3.8], gap: [0, 2.6, 2], margin: 2.5 },
+};
 
 interface RingGeometry {
 	radius: number;
@@ -17,12 +30,13 @@ interface RingGeometry {
 }
 
 /** Concentric ring layout, Apple-Fitness style: fewer rings → thicker strokes. */
-export function ringGeometry(size: number, count: number): RingGeometry[] {
+export function ringGeometry(size: number, count: number, weight: RingWeight = "bold"): RingGeometry[] {
 	const n = Math.max(1, Math.min(3, count));
 	const s = size / 44; // tuned on a 44px (22pt @2x) canvas
-	const width = [8.5, 7, 5.5][n - 1]! * s;
-	const gap = [0, 2, 1.5][n - 1]! * s;
-	const margin = 0.75 * s;
+	const w = WEIGHTS[weight];
+	const width = w.width[n - 1]! * s;
+	const gap = w.gap[n - 1]! * s;
+	const margin = w.margin * s;
 	const rings: RingGeometry[] = [];
 	let r = size / 2 - margin - width / 2;
 	for (let i = 0; i < n; i++) {
@@ -68,7 +82,7 @@ export function renderRings(opts: RingsIconOptions): Uint8Array {
 	const trackAlpha = opts.trackAlpha ?? 0.3;
 	// With no accounts, still draw two empty tracks so the icon is recognisable.
 	const progress = opts.progress.length ? opts.progress : [null, null];
-	const geo = ringGeometry(size, progress.length);
+	const geo = ringGeometry(size, progress.length, opts.weight);
 	const px = new Uint8Array(size * size * 4);
 	const SS = 4;
 	const c = size / 2;
@@ -100,5 +114,5 @@ export function renderRings(opts: RingsIconOptions): Uint8Array {
 }
 
 export function renderRingsPng(opts: RingsIconOptions): Uint8Array {
-	return encodePng(opts.size, opts.size, renderRings(opts));
+	return encodePng(opts.size, opts.size, renderRings(opts), opts.dpi);
 }

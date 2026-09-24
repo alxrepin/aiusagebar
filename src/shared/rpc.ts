@@ -27,6 +27,8 @@ export type PopoverRPC = {
 				response: AppState;
 			};
 			openUrl: { params: { url: string }; response: void };
+			checkForUpdates: { params: {}; response: AppState };
+			installUpdate: { params: {}; response: AppState };
 			quit: { params: {}; response: void };
 		};
 		messages: {

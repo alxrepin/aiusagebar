@@ -1,11 +1,12 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Utils } from "electrobun/bun";
+import { Updater, Utils } from "electrobun/bun";
 import type { AppState } from "../shared/types";
 import { Popover } from "./popover/popover";
 import { ConfigStore } from "./store/config";
 import { createSecretStore } from "./store/secrets";
 import { TrayController } from "./tray/trayController";
+import { UpdateController } from "./update/updateController";
 import { UsageService } from "./usage/service";
 
 const platform: AppState["platform"] =
@@ -33,8 +34,26 @@ const service = new UsageService({
 	},
 });
 
+// Updates come from GitHub Releases (release.baseUrl in electrobun.config.ts).
+const updates = new UpdateController({
+	feed: {
+		currentVersion: () => Updater.localInfo.version(),
+		check: async () => {
+			const r = await Updater.checkForUpdate();
+			return { updateAvailable: r.updateAvailable, version: r.version, error: r.error || undefined };
+		},
+		download: async () => {
+			await Updater.downloadUpdate();
+			if (!Updater.updateInfo()?.updateReady) throw new Error("Update download failed");
+		},
+		apply: () => Updater.applyUpdate(),
+	},
+	onChange: (u) => service.setUpdateState(u),
+	notify: (title, body) => Utils.showNotification({ title, body }),
+});
+
 const tray = new TrayController(platform, cacheDir);
-const popover = new Popover(platform, service, () => tray.tray.getBounds());
+const popover = new Popover(platform, service, updates, () => tray.tray.getBounds());
 
 tray.tray.on("tray-clicked", (event) => {
 	const action = (event as { data?: { action?: string } }).data?.action ?? "";
@@ -44,6 +63,7 @@ tray.tray.on("tray-clicked", (event) => {
 			break;
 		case "quit":
 			service.stop();
+			updates.stop();
 			Utils.quit();
 			break;
 		default:
@@ -65,3 +85,4 @@ if (platform === "linux") {
 service.onChange((state) => void tray.update(state));
 await tray.update(service.getState());
 service.start();
+void updates.start();

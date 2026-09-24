@@ -162,3 +162,28 @@ describe("UsageService alerts", () => {
 		expect(notes).toHaveLength(2);
 	});
 });
+
+describe("UsageService reconnect", () => {
+	test("tells the user once when an account needs to sign in again, and again after it recovered", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "aiub-"));
+		const notes: string[] = [];
+		const service = new UsageService({
+			config: new ConfigStore(join(dir, "config.json")),
+			secrets: new MemoryStore(),
+			platform: "mac",
+			notify: (title) => notes.push(title),
+			baseContext: { openUrl() {}, fetch, homeDir: dir, platform: "darwin" },
+		});
+		await service.startAuth("fake", "token");
+		fail = new ReauthRequiredError("expired");
+		await service.refreshAll({ force: true });
+		await service.refreshAll({ force: true });
+		expect(notes.filter((n) => /sign in again|войти заново/.test(n))).toHaveLength(1);
+
+		fail = null;
+		await service.refreshAll({ force: true });
+		fail = new ReauthRequiredError("expired");
+		await service.refreshAll({ force: true });
+		expect(notes.filter((n) => /sign in again|войти заново/.test(n))).toHaveLength(2);
+	});
+});

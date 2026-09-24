@@ -1,6 +1,7 @@
 import { BrowserView, BrowserWindow, Screen, Utils } from "electrobun/bun";
 import type { PopoverRPC } from "../../shared/rpc";
 import type { AppState } from "../../shared/types";
+import type { UpdateController } from "../update/updateController";
 import type { UsageService } from "../usage/service";
 import { popoverPosition, type Rect } from "./position";
 
@@ -24,6 +25,7 @@ export class Popover {
 	constructor(
 		private platform: AppState["platform"],
 		private service: UsageService,
+		updates: UpdateController,
 		private getTrayBounds: () => Rect,
 	) {
 		const svc = service;
@@ -67,8 +69,17 @@ export class Popover {
 					openUrl: ({ url }) => {
 						if (/^https:\/\//.test(url)) Utils.openExternal(url);
 					},
+					checkForUpdates: async () => {
+						await updates.check();
+						return svc.getState();
+					},
+					installUpdate: async () => {
+						await updates.install();
+						return svc.getState();
+					},
 					quit: () => {
 						svc.stop();
+						updates.stop();
 						Utils.quit();
 					},
 				},

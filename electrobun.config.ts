@@ -50,6 +50,12 @@ export default {
 	scripts: {
 		postWrap: "scripts/adhoc-sign.ts",
 	},
+	release: {
+		// The in-app updater fetches <prefix>-update.json and the bundle from the
+		// latest GitHub Release (uploaded by .github/workflows/release.yml).
+		baseUrl: "https://github.com/alxrepin/aiusagebar/releases/latest/download",
+		generatePatch: false,
+	},
 	runtime: {
 		// It's a tray app: hiding the popover must not quit it.
 		exitOnLastWindowClosed: false,

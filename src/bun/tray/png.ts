@@ -28,7 +28,11 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
 	return out;
 }
 
-export function encodePng(width: number, height: number, rgba: Uint8Array): Uint8Array {
+/**
+ * @param dpi Resolution stored in a pHYs chunk. macOS derives an image's point
+ *            size from it (144 dpi → a 36px image is 18pt), so @2x icons need it.
+ */
+export function encodePng(width: number, height: number, rgba: Uint8Array, dpi?: number): Uint8Array {
 	const ihdr = new Uint8Array(13);
 	const v = new DataView(ihdr.buffer);
 	v.setUint32(0, width);
@@ -44,9 +48,21 @@ export function encodePng(width: number, height: number, rgba: Uint8Array): Uint
 		raw.set(rgba.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
 	}
 
+	const phys: Uint8Array[] = [];
+	if (dpi) {
+		const d = new Uint8Array(9);
+		const dv = new DataView(d.buffer);
+		const ppm = Math.round(dpi / 0.0254); // pixels per metre
+		dv.setUint32(0, ppm);
+		dv.setUint32(4, ppm);
+		d[8] = 1; // unit: metre
+		phys.push(chunk("pHYs", d));
+	}
+
 	const parts = [
 		new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
 		chunk("IHDR", ihdr),
+		...phys,
 		chunk("IDAT", new Uint8Array(deflateSync(raw))),
 		chunk("IEND", new Uint8Array(0)),
 	];

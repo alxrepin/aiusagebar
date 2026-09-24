@@ -44,19 +44,35 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Details on click:** percentages, progress bars, "resets in 2h 18m · 12:10", your plan (Plus, Pro, Max…).
 - **Low-limit alerts.** A system notification when less than a set share of a limit is left (15% by default). One notification per limit, re-armed after the limit resets. The threshold and the alerts themselves are configurable.
 - **Background refresh** every 1–30 minutes, plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
-- **Multiple providers and accounts**, added and removed in two clicks.
+- **Multiple providers and accounts**, including several accounts of the same provider (e.g. work and personal Claude), added and removed in two clicks.
+- **Self-healing connections.** Expired tokens are refreshed automatically (on 401 and 403). If a sign-in really is gone, the card shows "Sign in again" and you get a single notification. After sleep or a network change the data refreshes right away.
+- **Automatic updates.** The app checks GitHub Releases every few hours, shows an "Update" button and restarts into the new version.
 - **Feels native:** Liquid Glass on macOS, Fluent on Windows 11, light and dark themes.
 - **Lightweight.** Built with [Electrobun](https://electrobun.dev) and the system WebView, no bundled Chromium.
 - English and Russian UI.
 
 ## Install
 
-Grab the file for your system from the [Releases page](https://github.com/alxrepin/aiusagebar/releases/latest).
+**The easiest way** is one command. It downloads the latest release and installs it without Gatekeeper / SmartScreen prompts:
+
+```sh
+# macOS (Apple Silicon)
+curl -fsSL https://raw.githubusercontent.com/alxrepin/aiusagebar/main/scripts/install.sh | bash
+```
+
+```powershell
+# Windows 10 / 11 (PowerShell)
+irm https://raw.githubusercontent.com/alxrepin/aiusagebar/main/scripts/install.ps1 | iex
+```
+
+Or grab the file for your system from the [Releases page](https://github.com/alxrepin/aiusagebar/releases/latest):
 
 | System | File |
 | --- | --- |
 | macOS (Apple Silicon) | `AIUsageBar-<version>-macos-arm64.dmg` |
 | Windows 10 / 11 (x64) | `AIUsageBar-<version>-windows-x64-Setup.zip` |
+
+Once installed, AIUsageBar **updates itself**: when a new version is out, the popover shows an **Update** button.
 
 <details>
 <summary><b>macOS: "app is damaged" or "developer cannot be verified"</b></summary>
@@ -76,6 +92,12 @@ Or right-click the app → Open → Open.
 Click "More info" → "Run anyway". The build is not signed with a publisher certificate.
 </details>
 
+<details>
+<summary><b>Why do the prompts appear, and why doesn't the install script trigger them?</b></summary>
+
+macOS and Windows flag files downloaded by a **browser** (quarantine attribute / "Mark of the Web") and then check them for an Apple notarisation ticket or a code-signing certificate. AIUsageBar is free and doesn't have either (an Apple Developer ID costs $99/year; a Windows certificate is similar). Files downloaded by `curl` or PowerShell aren't flagged, so the install script and the in-app updater never hit the prompt. You only deal with it once, if you install from the browser.
+</details>
+
 ## How it works
 
 On first launch, open the popover and connect a provider. Each provider offers two ways to sign in:
@@ -88,6 +110,10 @@ On first launch, open the popover and connect a provider. Each provider offers t
 **Browser sign-in** is OAuth 2.0 with PKCE. The app briefly listens on `localhost`, the browser redirects the authorization code there, and the app exchanges it for tokens itself. Tokens are refreshed automatically. No intermediate server.
 
 **CLI login** is read-only: AIUsageBar never rotates Claude Code or Codex tokens, so your CLI keeps working.
+
+**Several accounts of one provider.** Click **+** next to the provider in Settings again. For ChatGPT the sign-in page asks which account to use; for Claude, sign out on claude.ai first (or pick another account there). Accounts are told apart by their provider account id, so reconnecting the same account updates it instead of creating a duplicate.
+
+**When an API stops answering.** On 401/403 the app refreshes the token and retries. If the refresh is rejected, the card switches to "Sign in again" (CLI-linked accounts also get "Sign in with browser"), and a notification is shown once. Other errors (network, 5xx, 429) keep the last known data on screen and retry with growing pauses (1 → 30 min, honouring `Retry-After`).
 
 Limits come from the same endpoints the official CLIs use:
 
@@ -196,7 +222,7 @@ Sign-in buttons, cards, ring selection, alerts, background refresh and token sto
 Builds and releases run on GitHub Actions ([`release.yml`](.github/workflows/release.yml)):
 
 1. Every push to `main` runs the type check and tests, then builds for **macOS (arm64)** and **Windows (x64)**.
-2. If the version in `package.json` has no tag yet, a `vX.Y.Z` release is published with the installers and generated release notes.
+2. If the version in `package.json` has no tag yet, a `vX.Y.Z` release is published with the installers, the in-app update feed (`stable-<os>-<arch>-update.json` + bundle) and generated release notes. Installed apps pick it up from `releases/latest/download/`.
 
 To ship a new version, bump `version` in `package.json` and merge into `main`.
 
@@ -207,6 +233,7 @@ Apple signing and notarisation are optional. To enable them, add `ELECTROBUN_DEV
 - **No blur behind the window.** Liquid Glass is done in CSS; Electrobun 1.x can't blur the desktop behind a window (`NSGlassEffectView`, Mica/Acrylic).
 - **Linux.** Many AppIndicator implementations don't deliver plain clicks, so the icon has a menu.
 - **Not yet:** launch at login and an Intel Mac build.
+- Versions before 0.3.0 have no updater: install 0.3.0 once, updates are automatic from then on.
 
 ## License
 

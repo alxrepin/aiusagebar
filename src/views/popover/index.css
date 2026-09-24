@@ -809,3 +809,38 @@ body {
 .quit {
 	width: 100%;
 }
+
+/* ---------- update banner ---------- */
+
+.banner {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+}
+
+.banner-text {
+	flex: 1;
+	min-width: 0;
+	font-weight: 500;
+}
+
+.btn[disabled] {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.hint.flush {
+	padding: 0;
+}
+
+.reauth {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.error:has(.reauth) {
+	flex-direction: column;
+	align-items: stretch;
+}

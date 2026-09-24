@@ -33,3 +33,16 @@ test("fewer rings are drawn thicker", () => {
 	expect(ringGeometry(44, 1)[0]!.halfWidth).toBeGreaterThan(ringGeometry(44, 3)[0]!.halfWidth);
 	expect(ringGeometry(44, 3)).toHaveLength(3);
 });
+
+test("menu bar icon: pHYs chunk marks @2x (144 dpi) so macOS sizes it in points", () => {
+	const png = renderRingsPng({ size: 36, progress: [0.3], color: [0, 0, 0], weight: "thin", dpi: 144 });
+	const view = new DataView(png.buffer);
+	// Chunk right after IHDR (8 sig + 25 IHDR bytes).
+	expect(new TextDecoder().decode(png.slice(37, 41))).toBe("pHYs");
+	expect(view.getUint32(41)).toBe(5669); // 144 dpi in pixels per metre
+	expect(png[49]).toBe(1); // unit: metre
+});
+
+test("thin weight is lighter than the bold UI rings", () => {
+	expect(ringGeometry(36, 2, "thin")[0]!.halfWidth).toBeLessThan(ringGeometry(36, 2, "bold")[0]!.halfWidth);
+});

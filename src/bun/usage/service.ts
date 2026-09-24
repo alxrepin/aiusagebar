@@ -1,4 +1,4 @@
-import type { AccountInfo, AccountStatus, AppState, RingRef, Settings, UsageSnapshot } from "../../shared/types";
+import type { AccountInfo, AccountStatus, AppState, RingRef, Settings, UpdateState, UsageSnapshot } from "../../shared/types";
 import { getProvider, listProviders } from "../providers/registry";
 import { RateLimitedError, ReauthRequiredError, type Credentials, type ProviderContext } from "../providers/types";
 import { normalizeSettings, type ConfigStore } from "../store/config";
@@ -34,6 +34,10 @@ export class UsageService {
 	private failures = new Map<string, number>();
 	private listeners = new Set<Listener>();
 	private lastRefreshAt?: string;
+	private update: UpdateState = { currentVersion: "", status: "idle" };
+	/** Accounts we already told the user to sign in again (cleared once they work). */
+	private reauthNotified = new Set<string>();
+	private wakeTimer: ReturnType<typeof setInterval> | null = null;
 
 	constructor(private deps: ServiceDeps) {}
 
@@ -67,7 +71,14 @@ export class UsageService {
 			settings,
 			pendingAuth: Object.fromEntries([...this.pendingAuth].map(([p, v]) => [p, v.id])),
 			lastRefreshAt: this.lastRefreshAt,
+			update: this.update,
 		};
+	}
+
+	/** Called by the updater; the UI shows a banner when an update is available. */
+	setUpdateState(update: UpdateState) {
+		this.update = update;
+		this.emit();
 	}
 
 	// ---- background refresh -------------------------------------------------
@@ -75,11 +86,34 @@ export class UsageService {
 	start() {
 		void this.refreshAll();
 		this.schedule();
+		this.watchForWake();
+	}
+
+	/**
+	 * Timers don't fire while the computer sleeps. A tick that arrives much later
+	 * than expected means we just woke up (often with a new network): drop the
+	 * error backoff and refresh right away.
+	 */
+	private watchForWake() {
+		const TICK = 30_000;
+		let last = Date.now();
+		this.wakeTimer = setInterval(() => {
+			const now = Date.now();
+			if (now - last > TICK * 4) {
+				this.backoffUntil.clear();
+				// Give the network a moment to come back.
+				setTimeout(() => void this.refreshAll({ force: true }), 5_000);
+				this.schedule();
+			}
+			last = now;
+		}, TICK);
 	}
 
 	stop() {
 		if (this.timer) clearTimeout(this.timer);
 		this.timer = null;
+		if (this.wakeTimer) clearInterval(this.wakeTimer);
+		this.wakeTimer = null;
 		for (const { abort } of this.pendingAuth.values()) abort.abort();
 	}
 
@@ -140,6 +174,7 @@ export class UsageService {
 			this.data.usage[accountId] = snapshot;
 			this.checkAlerts(account, snapshot);
 			this.status[accountId] = { state: "ok" };
+			this.reauthNotified.delete(accountId);
 			this.failures.delete(accountId);
 			this.backoffUntil.delete(accountId);
 			await this.deps.config.save();
@@ -147,6 +182,15 @@ export class UsageService {
 			const message = err instanceof Error ? err.message : String(err);
 			const needsReauth = err instanceof ReauthRequiredError;
 			this.status[accountId] = { state: "error", message, needsReauth };
+			if (needsReauth && !this.reauthNotified.has(accountId)) {
+				this.reauthNotified.add(accountId);
+				const name = provider.displayName;
+				const ru = isRu();
+				this.deps.notify?.(
+					ru ? `${name}: нужно войти заново` : `${name}: sign in again`,
+					ru ? `${account.label} — откройте AIUsageBar и нажмите «Войти заново».` : `${account.label} — open AIUsageBar and click "Sign in again".`,
+				);
+			}
 
 			// Exponential backoff (1, 2, 4 … 30 min) so a broken account doesn't hammer the API.
 			const n = (this.failures.get(accountId) ?? 0) + 1;
@@ -194,7 +238,11 @@ export class UsageService {
 		this.emit();
 
 		try {
-			const result = await provider.authenticate(methodId, { ...this.deps.baseContext, signal: abort.signal });
+			const result = await provider.authenticate(methodId, {
+				...this.deps.baseContext,
+				signal: abort.signal,
+				addingAnother: this.data.accounts.some((a) => a.providerId === providerId),
+			});
 
 			// Re-connecting an account we already have: update it instead of duplicating.
 			const duplicate = this.data.accounts.find(
@@ -284,6 +332,14 @@ export class UsageService {
 		}
 		s.rings[slot] = ref;
 		await this.updateSettings({ rings: s.rings, ringMode: "custom" });
+	}
+}
+
+function isRu() {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("ru");
+	} catch {
+		return false;
 	}
 }
 

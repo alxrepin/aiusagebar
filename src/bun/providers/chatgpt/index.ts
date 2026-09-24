@@ -197,6 +197,8 @@ export class ChatGptProvider implements UsageProvider {
 				id_token_add_organizations: "true",
 				codex_cli_simplified_flow: "true",
 				state,
+				// Another ChatGPT account is connected: show the login screen so a different one can be picked.
+				...(ctx.addingAnother ? { prompt: "login" } : {}),
 			}).toString();
 			ctx.openUrl(url.toString());
 
@@ -283,7 +285,7 @@ export class ChatGptProvider implements UsageProvider {
 		};
 
 		let res = await request(tokens);
-		if (res.status === 401 && creds.source === "oauth") {
+		if ((res.status === 401 || res.status === 403) && creds.source === "oauth") {
 			updated = await this.refresh(updated ?? creds, ctx);
 			res = await request(updated);
 		}

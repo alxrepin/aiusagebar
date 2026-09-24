@@ -251,7 +251,7 @@ export class ClaudeProvider implements UsageProvider {
 
 		let res = await ctx.fetch(CLAUDE_OAUTH.usageUrl, { headers: this.headers(accessToken), signal: ctx.signal });
 
-		if (res.status === 401 && creds.source === "oauth") {
+		if ((res.status === 401 || res.status === 403) && creds.source === "oauth") {
 			updated = await this.refresh(updated ?? creds, ctx);
 			res = await ctx.fetch(CLAUDE_OAUTH.usageUrl, { headers: this.headers(updated.accessToken), signal: ctx.signal });
 		}
