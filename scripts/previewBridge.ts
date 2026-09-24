@@ -40,7 +40,7 @@ if (scenario === "two") {
 	};
 }
 
-const settings: AppState["settings"] = { refreshMinutes: 5, ringMode: "auto", rings: [null, null, null], iconTheme: "auto", showPercentInMenuBar: false, alertsEnabled: true, alertThreshold: 15 };
+const settings: AppState["settings"] = { refreshMinutes: 5, ringMode: "auto", rings: [null, null, null], iconTheme: "auto", showPercentInMenuBar: false, alertsEnabled: true, alertThreshold: 15, launchAtLogin: true };
 
 const state = (): AppState => ({
 	platform,

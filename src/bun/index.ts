@@ -1,10 +1,11 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Updater, Utils } from "electrobun/bun";
 import type { AppState } from "../shared/types";
 import { Popover } from "./popover/popover";
 import { ConfigStore } from "./store/config";
 import { createSecretStore } from "./store/secrets";
+import { setLaunchAtLogin } from "./system/launchAtLogin";
 import { TrayController } from "./tray/trayController";
 import { UpdateController } from "./update/updateController";
 import { UsageService } from "./usage/service";
@@ -82,6 +83,27 @@ if (platform === "linux") {
 	]);
 }
 
+// Launch at login (on by default, toggled in Settings). Re-applied on every
+// start so the registered path stays correct if the app was moved.
+async function loginItemTarget(): Promise<string | null> {
+	if ((await Updater.localInfo.channel().catch(() => "dev")) === "dev") return null; // `bun run dev` build
+	if (platform === "mac") return resolve(dirname(process.execPath), "..", ".."); // …/AIUsageBar.app
+	const exe = platform === "win" ? "launcher.exe" : "launcher";
+	return join(await Updater.appDataFolder(), "app", "bin", exe);
+}
+let appliedLaunchAtLogin: boolean | undefined;
+async function syncLaunchAtLogin(enabled: boolean) {
+	if (enabled === appliedLaunchAtLogin) return;
+	appliedLaunchAtLogin = enabled;
+	const target = await loginItemTarget();
+	if (!target) return;
+	await setLaunchAtLogin(enabled, { platform: process.platform, homeDir: homedir(), target }).catch((err) =>
+		console.warn("[login item]", err),
+	);
+}
+void syncLaunchAtLogin(config.data.settings.launchAtLogin);
+
+service.onChange((state) => void syncLaunchAtLogin(state.settings.launchAtLogin));
 service.onChange((state) => void tray.update(state));
 await tray.update(service.getState());
 service.start();
