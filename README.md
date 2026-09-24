@@ -132,7 +132,7 @@ Limits come from the same endpoints the official CLIs use:
 
   | System | Where tokens are stored |
   | --- | --- |
-  | macOS | login Keychain, service `AIUsageBar` |
+  | macOS | files encrypted with AES-256-GCM; the key is in the login Keychain (service `AIUsageBar`) |
   | Windows | a file encrypted with DPAPI for the current user |
   | Linux | Secret Service / libsecret, falling back to a `0600` file |
 

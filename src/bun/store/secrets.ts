@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 /**
  * Stores provider tokens using the operating system's own secret storage:
- *   macOS   → login Keychain (`security`)
+ *   macOS   → files encrypted with AES-256-GCM; the key lives in the login Keychain
  *   Windows → file encrypted with DPAPI for the current user (PowerShell)
  *   Linux   → Secret Service / libsecret (`secret-tool`), falling back to a 0600 file
  * Values are cached in memory after the first read.
@@ -16,32 +16,126 @@ export interface SecretStore {
 
 const SERVICE = "AIUsageBar";
 
-async function run(cmd: string[], stdin?: string): Promise<{ code: number; stdout: string }> {
+async function run(cmd: string[], stdin?: string): Promise<{ code: number; stdout: string; stderr: string }> {
 	const proc = Bun.spawn(cmd, {
 		stdin: stdin === undefined ? "ignore" : new TextEncoder().encode(stdin),
 		stdout: "pipe",
-		stderr: "ignore",
+		stderr: "pipe",
 	});
-	const stdout = await new Response(proc.stdout).text();
-	return { code: await proc.exited, stdout };
+	const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+	return { code: await proc.exited, stdout, stderr };
 }
 
 const safeName = (key: string) => key.replace(/[^a-zA-Z0-9_.-]/g, "_");
 
-class MacKeychainStore implements SecretStore {
-	async get(key: string) {
-		const r = await run(["security", "find-generic-password", "-s", SERVICE, "-a", safeName(key), "-w"]);
+/**
+ * Legacy macOS store: the whole token JSON as a Keychain item. Kept only to
+ * migrate existing items — `security -i` rejects command lines over ~4 KB,
+ * which ChatGPT's tokens exceed ("Could not write to the macOS Keychain").
+ */
+class MacKeychainItems {
+	async get(account: string) {
+		const r = await run(["security", "find-generic-password", "-s", SERVICE, "-a", safeName(account), "-w"]);
 		if (r.code !== 0) return null;
 		return Buffer.from(r.stdout.trim(), "base64").toString("utf8");
 	}
-	async set(key: string, value: string) {
-		// Pass the secret through `security -i` on stdin so it never shows up in the process list.
+	/** Only for short values (the encryption key). Passed on stdin so it never shows up in `ps`. */
+	async set(account: string, value: string) {
 		const b64 = Buffer.from(value, "utf8").toString("base64");
-		const r = await run(["security", "-i"], `add-generic-password -U -s ${SERVICE} -a ${safeName(key)} -w ${b64}\n`);
-		if (r.code !== 0) throw new Error("Could not write to the macOS Keychain");
+		const r = await run(["security", "-i"], `add-generic-password -U -s ${SERVICE} -a ${safeName(account)} -w ${b64}\n`);
+		if (r.code !== 0 || /error/i.test(r.stderr)) {
+			throw new Error(`Could not write to the macOS Keychain${r.stderr.trim() ? `: ${r.stderr.trim()}` : ""}`);
+		}
+	}
+	async delete(account: string) {
+		await run(["security", "delete-generic-password", "-s", SERVICE, "-a", safeName(account)]);
+	}
+}
+
+/** Supplies the 256-bit key used by EncryptedFileStore. */
+export interface KeyProvider {
+	getKey(): Promise<Uint8Array>;
+}
+
+const MASTER_KEY_ACCOUNT = "encryption-key";
+
+class MacKeychainKeyProvider implements KeyProvider {
+	private key?: Promise<Uint8Array>;
+	constructor(private items: MacKeychainItems) {}
+	getKey() {
+		this.key ??= (async () => {
+			const existing = await this.items.get(MASTER_KEY_ACCOUNT);
+			if (existing) return new Uint8Array(Buffer.from(existing, "base64"));
+			const fresh = crypto.getRandomValues(new Uint8Array(32));
+			await this.items.set(MASTER_KEY_ACCOUNT, Buffer.from(fresh).toString("base64"));
+			return fresh;
+		})().catch((err) => {
+			this.key = undefined; // retry next time
+			throw err;
+		});
+		return this.key;
+	}
+}
+
+/**
+ * Secrets as AES-256-GCM encrypted files (0600). Any size works, and only
+ * the short key needs to live in the OS keychain.
+ */
+export class EncryptedFileStore implements SecretStore {
+	constructor(
+		private dir: string,
+		private keys: KeyProvider,
+	) {}
+	private path(key: string) {
+		return join(this.dir, `${safeName(key)}.enc`);
+	}
+	private async cryptoKey() {
+		const raw = await this.keys.getKey();
+		return crypto.subtle.importKey("raw", new Uint8Array(raw), "AES-GCM", false, ["encrypt", "decrypt"]);
+	}
+	async get(key: string) {
+		const f = Bun.file(this.path(key));
+		if (!(await f.exists())) return null;
+		const data = Buffer.from((await f.text()).trim(), "base64");
+		const iv = data.subarray(0, 12);
+		const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, await this.cryptoKey(), data.subarray(12));
+		return new TextDecoder().decode(plain);
+	}
+	async set(key: string, value: string) {
+		const iv = crypto.getRandomValues(new Uint8Array(12));
+		const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await this.cryptoKey(), new TextEncoder().encode(value));
+		await mkdir(this.dir, { recursive: true, mode: 0o700 });
+		await Bun.write(this.path(key), Buffer.concat([iv, new Uint8Array(cipher)]).toString("base64"));
+		await chmod(this.path(key), 0o600).catch(() => {});
 	}
 	async delete(key: string) {
-		await run(["security", "delete-generic-password", "-s", SERVICE, "-a", safeName(key)]);
+		await rm(this.path(key), { force: true });
+	}
+}
+
+/** macOS: encrypted files keyed from the Keychain, migrating items written by older versions. */
+class MacStore implements SecretStore {
+	private legacy = new MacKeychainItems();
+	private files: EncryptedFileStore;
+	constructor(dir: string) {
+		this.files = new EncryptedFileStore(dir, new MacKeychainKeyProvider(this.legacy));
+	}
+	async get(key: string) {
+		const v = await this.files.get(key);
+		if (v !== null) return v;
+		const old = await this.legacy.get(key);
+		if (old !== null) {
+			await this.files.set(key, old);
+			await this.legacy.delete(key);
+		}
+		return old;
+	}
+	set(key: string, value: string) {
+		return this.files.set(key, value);
+	}
+	async delete(key: string) {
+		await this.files.delete(key);
+		await this.legacy.delete(key);
 	}
 }
 
@@ -173,7 +267,7 @@ class FallbackStore implements SecretStore {
 export function createSecretStore(dataDir: string, platform = process.platform): SecretStore {
 	const secretsDir = join(dataDir, "secrets");
 	let store: SecretStore;
-	if (platform === "darwin") store = new MacKeychainStore();
+	if (platform === "darwin") store = new MacStore(secretsDir);
 	else if (platform === "win32") store = new WindowsDpapiStore(secretsDir);
 	else if (Bun.which("secret-tool")) store = new FallbackStore(new LibsecretStore(), new FileStore(secretsDir));
 	else store = new FileStore(secretsDir);
