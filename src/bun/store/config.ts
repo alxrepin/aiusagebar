@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { AccountInfo, Settings, UsageSnapshot } from "../../shared/types";
 
 export const DEFAULT_SETTINGS: Settings = {
-	refreshMinutes: 5,
+	refreshMinutes: 1,
 	ringMode: "auto",
 	rings: [null, null, null],
 	iconTheme: "auto",
@@ -15,7 +15,8 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export interface ConfigFile {
-	version: 1;
+	/** 2: default refresh interval changed from 5 to 1 minute. */
+	version: 2;
 	settings: Settings;
 	accounts: AccountInfo[];
 	/** Last known usage, so the icon is meaningful right after launch. */
@@ -26,7 +27,7 @@ export interface ConfigFile {
 
 /** Non-secret app state persisted as JSON. Tokens live in the SecretStore. */
 export class ConfigStore {
-	data: ConfigFile = { version: 1, settings: { ...DEFAULT_SETTINGS }, accounts: [], usage: {}, alerted: [] };
+	data: ConfigFile = { version: 2, settings: { ...DEFAULT_SETTINGS }, accounts: [], usage: {}, alerted: [] };
 	private writing: Promise<void> = Promise.resolve();
 
 	constructor(readonly path: string) {}
@@ -37,8 +38,8 @@ export class ConfigStore {
 			try {
 				const raw = (await file.json()) as Partial<ConfigFile>;
 				this.data = {
-					version: 1,
-					settings: normalizeSettings(raw.settings),
+					version: 2,
+					settings: normalizeSettings(migrateSettings(raw.version, raw.settings)),
 					accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
 					usage: raw.usage && typeof raw.usage === "object" ? raw.usage : {},
 					alerted: Array.isArray(raw.alerted) ? raw.alerted.filter((k) => typeof k === "string") : [],
@@ -61,6 +62,16 @@ export class ConfigStore {
 		});
 		return this.writing;
 	}
+}
+
+/** Upgrades settings saved by older versions. */
+export function migrateSettings(version: number | undefined, settings: Partial<Settings> | undefined): Partial<Settings> | undefined {
+	if (!settings) return settings;
+	const s = { ...settings };
+	// v1 → v2: the default refresh went from 5 to 1 minute. Only move people who
+	// were still on the old default; a manually chosen interval is kept.
+	if ((version ?? 1) < 2 && s.refreshMinutes === 5) s.refreshMinutes = 1;
+	return s;
 }
 
 export function normalizeSettings(raw: Partial<Settings> | undefined): Settings {
