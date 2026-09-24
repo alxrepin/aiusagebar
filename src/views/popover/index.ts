@@ -880,6 +880,8 @@ bridge.on("events", {
 		render();
 	},
 	shown: () => {
+		// Give the page keyboard/wheel focus (Windows doesn't always hand it over).
+		window.focus();
 		if (view !== "main") go("main");
 	},
 });

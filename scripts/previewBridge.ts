@@ -86,7 +86,7 @@ export function createBridge(): Bridge {
 			installUpdate: async () => ((update = { ...update, status: "downloading", progress: 42 }), state()),
 			quit: async () => {},
 		},
-		send: { resize: ({ height }) => ((window as unknown as { __height: number }).__height = height), hide: () => {} },
+		send: { resize: ({ height }) => ((window as unknown as { __height: number }).__height = height), hide: () => {}, keepalive: () => {} },
 		on() {},
 	};
 }
