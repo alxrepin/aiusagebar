@@ -1,4 +1,4 @@
-import { dlopen, FFIType, type Pointer } from "bun:ffi";
+import { dlopen, FFIType, ptr, type Pointer } from "bun:ffi";
 
 /**
  * Windows-only helpers for the popover window (user32.dll via bun:ffi).
@@ -55,6 +55,22 @@ export function makeToolWindow(hwnd: Pointer | null | undefined): boolean {
 		return true;
 	} catch (err) {
 		console.warn("[popover] could not set tool window style:", err);
+		return false;
+	}
+}
+
+/** Windows 11: ask DWM for native rounded corners (no-op on Windows 10). */
+export function roundCorners(hwnd: Pointer | null | undefined): boolean {
+	if (process.platform !== "win32" || !hwnd) return false;
+	try {
+		const dwm = dlopen("dwmapi.dll", {
+			DwmSetWindowAttribute: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u32], returns: FFIType.i32 },
+		});
+		const DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+		const DWMWCP_ROUND = 2;
+		const value = new Int32Array([DWMWCP_ROUND]);
+		return dwm.symbols.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ptr(value), 4) === 0;
+	} catch {
 		return false;
 	}
 }

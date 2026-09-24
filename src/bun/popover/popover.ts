@@ -4,7 +4,7 @@ import type { AppState } from "../../shared/types";
 import { isRu } from "../i18n";
 import { openUrl } from "../system/openUrl";
 import type { UpdateController } from "../update/updateController";
-import { makeToolWindow, watchOutsideClicks } from "./winWindow";
+import { makeToolWindow, roundCorners, watchOutsideClicks } from "./winWindow";
 import type { UsageService } from "../usage/service";
 import { popoverPosition, type Rect } from "./position";
 
@@ -101,7 +101,10 @@ export class Popover {
 			url: "views://popover/index.html",
 			frame: { x: 0, y: 0, width: WIDTH, height: this.height },
 			titleBarStyle: "hidden",
-			transparent: true,
+			// Windows: Electrobun makes transparent windows WS_EX_LAYERED without ever
+			// setting layered attributes, and then clicks/scrolling only reach part
+			// of the window after it's resized. Use a plain opaque window there.
+			transparent: platform !== "win",
 			hidden: true,
 			styleMask: {
 				Borderless: true,
@@ -119,6 +122,7 @@ export class Popover {
 			// and make it a tool window so it has no taskbar button.
 			this.win.hide();
 			makeToolWindow(this.win.ptr);
+			roundCorners(this.win.ptr);
 		} else {
 			this.win.on("blur", () => {
 				if (this.visible) this.hide();
