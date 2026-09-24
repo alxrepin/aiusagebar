@@ -175,29 +175,40 @@ body {
 	padding: var(--window-pad);
 }
 
+/* The panel is the fixed frame (background, rim, shadow). Scrolling happens in
+   .scroller inside it, so decorations like the Liquid Glass rim (::before) stay
+   put instead of scrolling over the content. */
 .panel {
 	position: relative;
+	display: flex;
+	flex-direction: column;
 	max-height: calc(100vh - 2 * var(--window-pad));
-	overflow-y: auto;
-	overflow-x: hidden;
-	padding: 12px;
+	overflow: hidden;
 	border-radius: var(--panel-radius);
 	background: var(--panel-bg);
 	border: var(--panel-border);
 	box-shadow: var(--panel-shadow);
 	/* Own compositing layer, so re-rendering the content never repaints the background. */
 	transform: translateZ(0);
+}
+
+.scroller {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 12px;
 	/* Scrollable, but without a visible scrollbar (like native popovers). */
 	scrollbar-width: none;
 }
 
-.panel::-webkit-scrollbar {
+.scroller::-webkit-scrollbar {
 	display: none;
 	width: 0;
 	height: 0;
 }
 
-:root[data-platform="mac"] .panel {
+:root[data-platform="mac"] .scroller {
 	padding: 14px;
 }
 
@@ -205,6 +216,7 @@ body {
 :root[data-platform="mac"] .panel::before {
 	content: "";
 	position: absolute;
+	z-index: 1;
 	inset: 0;
 	border-radius: inherit;
 	pointer-events: none;

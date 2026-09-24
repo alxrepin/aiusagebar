@@ -814,14 +814,16 @@ function renderSettings() {
 
 const root = document.getElementById("app")!;
 const content = h("div", { class: "content" });
-const panel = h("div", { class: "panel" }, content);
+// .panel = fixed frame (background, rim, shadow); .scroller = what actually scrolls.
+const scroller = h("div", { class: "scroller" }, content);
+const panel = h("div", { class: "panel" }, scroller);
 root.append(panel);
 
 function go(v: typeof view) {
 	view = v;
 	confirmRemove = null;
 	render();
-	panel.scrollTop = 0;
+	scroller.scrollTop = 0;
 }
 
 // ---- theme & language ------------------------------------------------------------
@@ -845,17 +847,19 @@ function render() {
 	if (!state) return;
 	applyPrefs();
 	document.documentElement.dataset.platform = state.platform;
-	const scroll = panel.scrollTop;
+	const scroll = scroller.scrollTop;
 	content.replaceChildren(...(view === "main" ? renderMain() : renderSettings()).filter((n): n is HTMLElement => !!n));
-	panel.scrollTop = scroll;
+	scroller.scrollTop = scroll;
 }
 
 // Tell the host how tall we are so the native window hugs the content.
 const PADDING = 2 * parseInt(getComputedStyle(document.documentElement).getPropertyValue("--window-pad") || "0", 10);
 let lastHeight = 0;
 new ResizeObserver(() => {
-	const style = getComputedStyle(panel);
-	const chrome = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+	const frame = getComputedStyle(panel);
+	const inner = getComputedStyle(scroller);
+	const chrome =
+		parseFloat(frame.borderTopWidth) + parseFloat(frame.borderBottomWidth) + parseFloat(inner.paddingTop) + parseFloat(inner.paddingBottom);
 	const height = Math.ceil(content.offsetHeight + chrome + PADDING);
 	if (Math.abs(height - lastHeight) > 1) {
 		lastHeight = height;
