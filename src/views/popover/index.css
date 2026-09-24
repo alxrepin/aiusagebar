@@ -177,7 +177,14 @@ body {
 	box-shadow: var(--panel-shadow);
 	/* Own compositing layer, so re-rendering the content never repaints the background. */
 	transform: translateZ(0);
-	scrollbar-width: thin;
+	/* Scrollable, but without a visible scrollbar (like native popovers). */
+	scrollbar-width: none;
+}
+
+.panel::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
 }
 
 :root[data-platform="mac"] .panel {
