@@ -86,13 +86,12 @@ test("encodeIco: valid ICONDIR with PNG entries (Windows tray and app icon)", as
 });
 
 test("Windows helpers are inert on other platforms", async () => {
-	const { foregroundProcessId, makeToolWindow, watchForeground } = await import("../src/bun/popover/winWindow");
+	const { makeToolWindow, watchOutsideClicks } = await import("../src/bun/popover/winWindow");
 	if (process.platform === "win32") return;
-	expect(foregroundProcessId()).toBeNull();
-	expect(makeToolWindow(null)).toBe(false);
-	let left = false;
-	const stop = watchForeground(() => (left = true), 5);
+	expect(makeToolWindow(123 as never)).toBe(false);
+	let fired = false;
+	const stop = watchOutsideClicks(123 as never, () => (fired = true), 5);
 	await Bun.sleep(30);
 	stop();
-	expect(left).toBe(false);
+	expect(fired).toBe(false);
 });
