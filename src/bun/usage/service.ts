@@ -3,6 +3,7 @@ import { getProvider, listProviders } from "../providers/registry";
 import { RateLimitedError, ReauthRequiredError, type Credentials, type ProviderContext } from "../providers/types";
 import { normalizeSettings, type ConfigStore } from "../store/config";
 import type { SecretStore } from "../store/secrets";
+import { isRu, setLanguage } from "../i18n";
 import { checkLowLimits, clearAccountAlerts } from "./alerts";
 import { resolveRings } from "./rings";
 
@@ -39,7 +40,9 @@ export class UsageService {
 	private reauthNotified = new Set<string>();
 	private wakeTimer: ReturnType<typeof setInterval> | null = null;
 
-	constructor(private deps: ServiceDeps) {}
+	constructor(private deps: ServiceDeps) {
+		setLanguage(deps.config.data.settings.language);
+	}
 
 	private get now() {
 		return this.deps.now?.() ?? Date.now();
@@ -308,6 +311,7 @@ export class UsageService {
 	async updateSettings(patch: Partial<Settings>) {
 		const before = this.data.settings.refreshMinutes;
 		this.data.settings = normalizeSettings({ ...this.data.settings, ...patch });
+		setLanguage(this.data.settings.language);
 		await this.deps.config.save();
 		if (this.data.settings.refreshMinutes !== before && this.timer) this.schedule();
 		// Re-evaluate alerts against the data we already have (e.g. alerts just enabled or threshold raised).
@@ -332,14 +336,6 @@ export class UsageService {
 		}
 		s.rings[slot] = ref;
 		await this.updateSettings({ rings: s.rings, ringMode: "custom" });
-	}
-}
-
-function isRu() {
-	try {
-		return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("ru");
-	} catch {
-		return false;
 	}
 }
 

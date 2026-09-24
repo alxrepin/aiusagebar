@@ -1,4 +1,5 @@
 import type { UpdateState } from "../../shared/types";
+import { isRu as ru } from "../i18n";
 
 /** The bits of an update feed we need; implemented with Electrobun's Updater in index.ts. */
 export interface UpdateFeed {
@@ -21,13 +22,6 @@ export interface UpdateControllerDeps {
 	now?: () => number;
 }
 
-const ru = () => {
-	try {
-		return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("ru");
-	} catch {
-		return false;
-	}
-};
 
 /**
  * Checks the release feed in the background (on launch and every few hours),

@@ -1,4 +1,5 @@
 import type { AccountInfo, LimitWindow, Settings, UsageSnapshot } from "../../shared/types";
+import { isRu } from "../i18n";
 
 export interface LowLimitAlert {
 	key: string;
@@ -8,13 +9,6 @@ export interface LowLimitAlert {
 
 const alertKey = (accountId: string, windowId: string) => `${accountId}|${windowId}`;
 
-const isRu = () => {
-	try {
-		return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("ru");
-	} catch {
-		return false;
-	}
-};
 
 function formatIn(ms: number, ru: boolean): string {
 	const mins = Math.max(0, Math.round(ms / 60_000));

@@ -1,6 +1,6 @@
 import type { AccountInfo, AppState, LimitWindow, ProviderInfo, RingRef } from "../../shared/types";
 import { createBridge } from "./bridge";
-import { formatAgo, formatDuration, formatResetAt, t } from "./i18n";
+import { formatAgo, formatDuration, formatResetAt, setLocale, t } from "./i18n";
 
 const bridge = createBridge();
 
@@ -724,6 +724,31 @@ function renderSettings() {
 				"div",
 				{ class: "list glass" },
 				h(
+					"div",
+					{ class: "row stacked" },
+					h("div", { class: "row-text" }, h("div", { class: "name" }, t("appearance"))),
+					segmented(s.settings.theme, [
+						["system", t("themeSystem")],
+						["light", t("themeLight")],
+						["dark", t("themeDark")],
+					], (v) => act(() => bridge.request.updateSettings({ theme: v }))),
+				),
+				h(
+					"div",
+					{ class: "row" },
+					h("div", { class: "row-text" }, h("div", { class: "name" }, t("language"))),
+					// Language names are shown in their own language so they're recognisable either way.
+					select(
+						s.settings.language,
+						[
+							["system", t("langSystem")],
+							["en", "English"],
+							["ru", "Русский"],
+						],
+						(v) => act(() => bridge.request.updateSettings({ language: v as AppState["settings"]["language"] })),
+					),
+				),
+				h(
 					"label",
 					{ class: "row" },
 					h("div", { class: "row-text" }, h("div", { class: "name" }, t("launchAtLogin"))),
@@ -799,8 +824,26 @@ function go(v: typeof view) {
 	panel.scrollTop = 0;
 }
 
+// ---- theme & language ------------------------------------------------------------
+
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+
+/** Applies the language and theme settings ("system" follows the OS). */
+function applyPrefs() {
+	if (!state) return;
+	const { language, theme } = state.settings;
+	setLocale(language);
+	const dark = theme === "dark" || (theme === "system" && darkQuery.matches);
+	document.documentElement.dataset.theme = dark ? "dark" : "light";
+}
+
+darkQuery.addEventListener("change", () => {
+	if (state?.settings.theme === "system") applyPrefs();
+});
+
 function render() {
 	if (!state) return;
+	applyPrefs();
 	document.documentElement.dataset.platform = state.platform;
 	const scroll = panel.scrollTop;
 	content.replaceChildren(...(view === "main" ? renderMain() : renderSettings()).filter((n): n is HTMLElement => !!n));

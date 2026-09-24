@@ -10,6 +10,8 @@
 			(function () {
 				var ua = navigator.userAgent;
 				document.documentElement.dataset.platform = /Mac/.test(ua) ? "mac" : /Windows/.test(ua) ? "win" : "linux";
+				// System theme until the saved setting arrives from the app.
+				document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 			})();
 		</script>
 		<link rel="stylesheet" href="index.css" />

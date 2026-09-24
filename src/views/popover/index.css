@@ -7,7 +7,7 @@
  */
 
 :root {
-	color-scheme: light dark;
+	color-scheme: light;
 	--window-pad: 10px;
 
 	--ink: 0 0 0;
@@ -46,14 +46,19 @@
 	--bar-radius: 3px;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--panel-solid: rgb(40 40 44);
-		--ink: 255 255 255;
-		--panel-bg: rgb(36 36 38);
-		--primary-fg: rgb(20 20 20);
-		--panel-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
-	}
+/* dark (set by the theme setting or the OS) */
+:root[data-theme="dark"] {
+	--panel-solid: rgb(40 40 44);
+	--ink: 255 255 255;
+	--panel-bg: rgb(36 36 38);
+	--primary-fg: rgb(20 20 20);
+	--panel-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+
+/* Native controls (select popups, caret) follow the chosen theme. */
+:root[data-theme="dark"] {
+	color-scheme: dark;
 }
 
 /* ---------- macOS · Liquid Glass ---------- */
@@ -87,23 +92,23 @@
 	--bar-radius: 999px;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root[data-platform="mac"] {
-		--panel-bg: linear-gradient(180deg, rgb(52 52 58 / 0.94), rgb(32 32 36 / 0.93));
-		--panel-border: 0.5px solid rgb(255 255 255 / 0.22);
-		--panel-shadow:
-			0 0 0 0.5px rgb(0 0 0 / 0.6),
-			0 2px 6px rgb(0 0 0 / 0.4),
-			inset 0 1px 1px rgb(255 255 255 / 0.22),
-			inset 0 -1px 1px rgb(255 255 255 / 0.06);
-		--card-bg: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.05));
-		--card-border: 0.5px solid rgb(255 255 255 / 0.14);
-		--card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
-		--ctl-bg: rgb(255 255 255 / 0.1);
-		--ctl-bg-hover: rgb(255 255 255 / 0.18);
-		--ctl-border: 0.5px solid rgb(255 255 255 / 0.12);
-	}
+/* dark (set by the theme setting or the OS) */
+:root[data-platform="mac"][data-theme="dark"] {
+	--panel-bg: linear-gradient(180deg, rgb(52 52 58 / 0.94), rgb(32 32 36 / 0.93));
+	--panel-border: 0.5px solid rgb(255 255 255 / 0.22);
+	--panel-shadow:
+		0 0 0 0.5px rgb(0 0 0 / 0.6),
+		0 2px 6px rgb(0 0 0 / 0.4),
+		inset 0 1px 1px rgb(255 255 255 / 0.22),
+		inset 0 -1px 1px rgb(255 255 255 / 0.06);
+	--card-bg: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.05));
+	--card-border: 0.5px solid rgb(255 255 255 / 0.14);
+	--card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+	--ctl-bg: rgb(255 255 255 / 0.1);
+	--ctl-bg-hover: rgb(255 255 255 / 0.18);
+	--ctl-border: 0.5px solid rgb(255 255 255 / 0.12);
 }
+
 
 /* ---------- Windows 11 · Fluent ---------- */
 
@@ -127,18 +132,18 @@
 	--bar-radius: 1.5px;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root[data-platform="win"] {
-		--panel-bg: rgb(32 32 32 / 0.97);
-		--panel-border: 1px solid rgb(255 255 255 / 0.08);
-		--panel-shadow: 0 2px 6px rgb(0 0 0 / 0.4), 0 0 2px rgb(0 0 0 / 0.4);
-		--card-bg: rgb(255 255 255 / 0.05);
-		--card-border: 1px solid rgb(0 0 0 / 0.1);
-		--ctl-bg: rgb(255 255 255 / 0.06);
-		--ctl-bg-hover: rgb(255 255 255 / 0.08);
-		--ctl-border: 1px solid rgb(255 255 255 / 0.07);
-	}
+/* dark (set by the theme setting or the OS) */
+:root[data-platform="win"][data-theme="dark"] {
+	--panel-bg: rgb(32 32 32 / 0.97);
+	--panel-border: 1px solid rgb(255 255 255 / 0.08);
+	--panel-shadow: 0 2px 6px rgb(0 0 0 / 0.4), 0 0 2px rgb(0 0 0 / 0.4);
+	--card-bg: rgb(255 255 255 / 0.05);
+	--card-border: 1px solid rgb(0 0 0 / 0.1);
+	--ctl-bg: rgb(255 255 255 / 0.06);
+	--ctl-bg-hover: rgb(255 255 255 / 0.08);
+	--ctl-border: 1px solid rgb(255 255 255 / 0.07);
 }
+
 
 /* ---------- Linux ---------- */
 
@@ -213,11 +218,11 @@ body {
 	opacity: 0.8;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root[data-platform="mac"] .panel::before {
-		opacity: 0.25;
-	}
+/* dark (set by the theme setting or the OS) */
+:root[data-platform="mac"][data-theme="dark"] .panel::before {
+	opacity: 0.25;
 }
+
 
 .content {
 	display: flex;
@@ -757,12 +762,12 @@ body {
 	box-shadow: 0 1px 3px rgb(0 0 0 / 0.14);
 }
 
-@media (prefers-color-scheme: dark) {
-	.seg.active {
-		background: rgb(255 255 255 / 0.2);
-		color: var(--fg);
-	}
+/* dark (set by the theme setting or the OS) */
+:root[data-theme="dark"] .seg.active {
+	background: rgb(255 255 255 / 0.2);
+	color: var(--fg);
 }
+
 
 .select {
 	appearance: none;
@@ -941,4 +946,15 @@ body {
 .swatch:focus-visible {
 	outline: 2px solid var(--fg-2);
 	outline-offset: 2px;
+}
+
+/* Label above a full-width control (e.g. the theme switch). */
+.row.stacked {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.row.stacked .segmented {
+	flex: none;
 }
