@@ -6,6 +6,7 @@ import { Popover } from "./popover/popover";
 import { ConfigStore } from "./store/config";
 import { createSecretStore } from "./store/secrets";
 import { setLaunchAtLogin } from "./system/launchAtLogin";
+import { installFileLog } from "./system/log";
 import { openUrl } from "./system/openUrl";
 import { quitApp } from "./system/quit";
 import { TrayController } from "./tray/trayController";
@@ -16,6 +17,11 @@ const platform: AppState["platform"] =
 	process.platform === "darwin" ? "mac" : process.platform === "win32" ? "win" : "linux";
 
 const dataDir = join(Utils.paths.appData, "AIUsageBar");
+installFileLog(join(dataDir, "aiusagebar.log"));
+
+function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+	return Promise.race([p, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(message)), ms))]);
+}
 const cacheDir = join(Utils.paths.cache, "AIUsageBar");
 
 // Menu-bar-only app: no Dock icon on macOS.
@@ -42,7 +48,8 @@ const updates = new UpdateController({
 	feed: {
 		currentVersion: () => Updater.localInfo.version(),
 		check: async () => {
-			const r = await Updater.checkForUpdate();
+			// Electrobun's fetch has no timeout; don't leave the spinner running forever.
+			const r = await withTimeout(Updater.checkForUpdate(), 30_000, "Update check timed out");
 			return { updateAvailable: r.updateAvailable, version: r.version, error: r.error || undefined };
 		},
 		download: async () => {

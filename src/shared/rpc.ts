@@ -36,6 +36,8 @@ export type PopoverRPC = {
 			resize: { height: number };
 			/** Esc pressed or a link opened: hide the popover. */
 			hide: {};
+			/** Keeps the page's RPC socket from idling out; no-op. */
+			keepalive: {};
 		};
 	}>;
 	webview: RPCSchema<{
