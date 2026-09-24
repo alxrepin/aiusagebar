@@ -18,7 +18,10 @@ await mkdir(out, { recursive: true });
 const files = await readdir(src);
 console.log("artifacts:", files);
 
-const installers = files.filter((f) => /\.(dmg|exe|msi|zip|AppImage)$/i.test(f));
+let installers = files.filter((f) => /\.(dmg|exe|msi|zip|AppImage)$/i.test(f));
+// Windows: publish the single-file Inno Setup .exe; Electrobun's Setup.zip only
+// works when its .installer folder is extracted next to Setup.exe.
+if (installers.some((f) => /\.exe$/i.test(f))) installers = installers.filter((f) => !/\.zip$/i.test(f));
 if (!installers.length) throw new Error("no installers found in artifacts/");
 for (const f of installers) {
 	const kind = /setup/i.test(f) ? "-Setup" : "";

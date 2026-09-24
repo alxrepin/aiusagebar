@@ -75,3 +75,34 @@ export function encodePng(width: number, height: number, rgba: Uint8Array, dpi?:
 	}
 	return png;
 }
+
+/**
+ * Windows .ico holding PNG-compressed images (supported since Vista).
+ * Windows' LoadImage(IMAGE_ICON) — used for tray icons — only reads .ico,
+ * and picks the entry closest to the size it needs.
+ */
+export function encodeIco(images: { size: number; png: Uint8Array }[]): Uint8Array {
+	const count = images.length;
+	const headerSize = 6 + 16 * count;
+	const total = headerSize + images.reduce((n, i) => n + i.png.length, 0);
+	const out = new Uint8Array(total);
+	const v = new DataView(out.buffer);
+	v.setUint16(0, 0, true); // reserved
+	v.setUint16(2, 1, true); // type: icon
+	v.setUint16(4, count, true);
+	let offset = headerSize;
+	images.forEach((img, i) => {
+		const e = 6 + 16 * i;
+		out[e] = img.size >= 256 ? 0 : img.size; // 0 means 256
+		out[e + 1] = img.size >= 256 ? 0 : img.size;
+		out[e + 2] = 0; // palette
+		out[e + 3] = 0; // reserved
+		v.setUint16(e + 4, 1, true); // colour planes
+		v.setUint16(e + 6, 32, true); // bits per pixel
+		v.setUint32(e + 8, img.png.length, true);
+		v.setUint32(e + 12, offset, true);
+		out.set(img.png, offset);
+		offset += img.png.length;
+	});
+	return out;
+}

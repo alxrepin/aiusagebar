@@ -1,7 +1,10 @@
 import { BrowserView, BrowserWindow, Screen, Utils } from "electrobun/bun";
 import type { PopoverRPC } from "../../shared/rpc";
 import type { AppState } from "../../shared/types";
+import { isRu } from "../i18n";
+import { openUrl } from "../system/openUrl";
 import type { UpdateController } from "../update/updateController";
+import { makeToolWindow, watchForeground } from "./winWindow";
 import type { UsageService } from "../usage/service";
 import { popoverPosition, type Rect } from "./position";
 
@@ -21,6 +24,8 @@ export class Popover {
 	private height = 420;
 	private anchorTray: Rect = { x: 0, y: 0, width: 0, height: 0 };
 	private rpc;
+	/** Windows: stops the foreground watcher that dismisses the popover. */
+	private stopWatch: (() => void) | null = null;
 
 	constructor(
 		private platform: AppState["platform"],
@@ -43,7 +48,7 @@ export class Popover {
 					startAuth: async ({ providerId, methodId }) => {
 						try {
 							const account = await svc.startAuth(providerId, methodId);
-							Utils.showNotification({ title: "AIUsageBar", body: `Connected ${account.label}` });
+							Utils.showNotification({ title: "AIUsageBar", body: `${isRu() ? "Подключено" : "Connected"}: ${account.label}` });
 							return { ok: true as const };
 						} catch (err) {
 							return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
@@ -67,7 +72,7 @@ export class Popover {
 						return svc.getState();
 					},
 					openUrl: ({ url }) => {
-						if (/^https:\/\//.test(url)) Utils.openExternal(url);
+						if (/^https:\/\//.test(url)) openUrl(url);
 					},
 					checkForUpdates: async () => {
 						await updates.check();
@@ -107,9 +112,17 @@ export class Popover {
 			rpc: this.rpc,
 		});
 
-		this.win.on("blur", () => {
-			if (this.visible) this.hide();
-		});
+		if (platform === "win") {
+			// Electrobun ignores `hidden` on Windows and shows new windows right
+			// away (it appeared in a screen corner on first launch). Hide it now,
+			// and make it a tool window so it has no taskbar button.
+			this.win.hide();
+			makeToolWindow(this.win.ptr);
+		} else {
+			this.win.on("blur", () => {
+				if (this.visible) this.hide();
+			});
+		}
 
 		// Push every state change to the page while it's open.
 		service.onChange((state) => {
@@ -135,12 +148,19 @@ export class Popover {
 		this.rpc.send.shown({});
 		this.rpc.send.state(this.service.getState());
 		void this.service.refreshIfStale();
+		// Windows: close when the user switches to another app (see winWindow.ts).
+		if (this.platform === "win") {
+			this.stopWatch?.();
+			this.stopWatch = watchForeground(() => this.hide());
+		}
 	}
 
 	hide() {
 		if (!this.visible) return;
 		this.visible = false;
 		this.hiddenAt = Date.now();
+		this.stopWatch?.();
+		this.stopWatch = null;
 		this.win.hide();
 	}
 

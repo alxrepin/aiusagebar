@@ -65,3 +65,34 @@ test("hexToRgb", async () => {
 	expect(hexToRgb("#FA114F")).toEqual([250, 17, 79]);
 	expect(hexToRgb("nope")).toBeNull();
 });
+
+test("encodeIco: valid ICONDIR with PNG entries (Windows tray and app icon)", async () => {
+	const { encodeIco, encodePng } = await import("../src/bun/tray/png");
+	const png = (n: number) => encodePng(n, n, new Uint8Array(n * n * 4));
+	const ico = encodeIco([16, 32, 256].map((size) => ({ size, png: png(size) })));
+	const v = new DataView(ico.buffer);
+	expect(v.getUint16(0, true)).toBe(0);
+	expect(v.getUint16(2, true)).toBe(1); // icon
+	expect(v.getUint16(4, true)).toBe(3);
+	const entry = (i: number) => ({ w: ico[6 + 16 * i], bpp: v.getUint16(6 + 16 * i + 6, true), size: v.getUint32(6 + 16 * i + 8, true), off: v.getUint32(6 + 16 * i + 12, true) });
+	expect(entry(0).w).toBe(16);
+	expect(entry(2).w).toBe(0); // 256 is stored as 0
+	for (let i = 0; i < 3; i++) {
+		const e = entry(i);
+		expect(e.bpp).toBe(32);
+		expect([...ico.slice(e.off, e.off + 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+		expect(e.off + e.size).toBeLessThanOrEqual(ico.length);
+	}
+});
+
+test("Windows helpers are inert on other platforms", async () => {
+	const { foregroundProcessId, makeToolWindow, watchForeground } = await import("../src/bun/popover/winWindow");
+	if (process.platform === "win32") return;
+	expect(foregroundProcessId()).toBeNull();
+	expect(makeToolWindow(null)).toBe(false);
+	let left = false;
+	const stop = watchForeground(() => (left = true), 5);
+	await Bun.sleep(30);
+	stop();
+	expect(left).toBe(false);
+});

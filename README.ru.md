@@ -72,7 +72,7 @@ irm https://raw.githubusercontent.com/alxrepin/aiusagebar/main/scripts/install.p
 | Система | Файл |
 | --- | --- |
 | macOS (Apple Silicon) | `AIUsageBar-<версия>-macos-arm64.dmg` |
-| Windows 10 / 11 (x64) | `AIUsageBar-<версия>-windows-x64-Setup.zip` |
+| Windows 10 / 11 (x64) | `AIUsageBar-<версия>-windows-x64-Setup.exe` |
 
 После установки AIUsageBar **обновляется сам**: когда выходит новая версия, в окне появляется кнопка **«Обновить»**.
 
