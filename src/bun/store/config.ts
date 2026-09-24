@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	alertsEnabled: true,
 	alertThreshold: 15,
 	launchAtLogin: true,
+	providerColors: {},
 };
 
 export interface ConfigFile {
@@ -69,6 +70,11 @@ export function normalizeSettings(raw: Partial<Settings> | undefined): Settings 
 	if (!["auto", "light", "dark"].includes(s.iconTheme)) s.iconTheme = "auto";
 	s.alertsEnabled = s.alertsEnabled !== false;
 	s.launchAtLogin = s.launchAtLogin !== false;
+	const colors: Record<string, string> = {};
+	for (const [id, c] of Object.entries(s.providerColors && typeof s.providerColors === "object" ? s.providerColors : {})) {
+		if (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c)) colors[id] = c.toLowerCase();
+	}
+	s.providerColors = colors;
 	s.alertThreshold = Math.min(99, Math.max(1, Math.round(Number(s.alertThreshold) || DEFAULT_SETTINGS.alertThreshold)));
 	const rings = Array.isArray(s.rings) ? s.rings.slice(0, 3) : [];
 	while (rings.length < 3) rings.push(null);

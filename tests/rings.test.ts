@@ -69,3 +69,18 @@ describe("custom rings", () => {
 		expect(rings[0]?.ref.windowId).toBe("session");
 	});
 });
+
+describe("provider colours", () => {
+	test("rings carry the colour of their provider; invalid colours are dropped", async () => {
+		const { normalizeSettings } = await import("../src/bun/store/config");
+		const s = normalizeSettings({ providerColors: { claude: "#FF9F0A", chatgpt: "red" } as Record<string, string> });
+		expect(s.providerColors).toEqual({ claude: "#ff9f0a" });
+		expect(normalizeSettings(undefined).providerColors).toEqual({});
+
+		const rings = resolveRings({ ringMode: "auto", rings: [], providerColors: s.providerColors }, [acc("c", "claude"), acc("g", "chatgpt")], {
+			c: usage("c", 40, 10),
+			g: usage("g", 75, 20),
+		});
+		expect(rings.map((r) => r.color)).toEqual(["#ff9f0a", undefined]);
+	});
+});

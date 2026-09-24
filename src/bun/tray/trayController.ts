@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Tray } from "electrobun/bun";
 import type { AppState, IconTheme } from "../../shared/types";
 import { setStatusItemTemplateImage } from "./macStatusImage";
-import { renderRingsPng } from "./ringsIcon";
+import { hexToRgb, renderRingsPng, type RGB } from "./ringsIcon";
 
 type Platform = AppState["platform"];
 
@@ -35,11 +35,12 @@ export class TrayController {
 		this.tray = new Tray({ title: "", image: initial, template: platform === "mac", width: size, height: size });
 	}
 
-	private render(progress: (number | null)[], color: [number, number, number]) {
+	private render(progress: (number | null)[], color: RGB, colors?: (RGB | null)[]) {
 		return renderRingsPng({
 			size: LOGICAL_SIZE[this.platform] * 2,
 			progress,
 			color,
+			colors,
 			weight: "thin",
 			trackAlpha: 0.32,
 			// @2x: tells macOS the image is LOGICAL_SIZE points, not pixels.
@@ -49,8 +50,13 @@ export class TrayController {
 
 	async update(state: AppState) {
 		const progress = state.rings.map((r) => r.progress);
-		const ink = await this.inkColor(state.settings.iconTheme);
-		const key = JSON.stringify([progress.map((p) => (p === null ? null : Math.round(p * 100))), ink]);
+		const colors = state.rings.map((r) => (r.color ? hexToRgb(r.color) : null));
+		const colored = colors.some(Boolean);
+		// macOS: all-monochrome rings stay a template image (system recolours it);
+		// with provider colours we draw real colours and pick the ink ourselves.
+		const template = this.platform === "mac" && !colored;
+		const ink = await this.inkColor(state.settings.iconTheme, template);
+		const key = JSON.stringify([progress.map((p) => (p === null ? null : Math.round(p * 100))), ink, colors, template]);
 
 		if (key !== this.lastKey) {
 			this.lastKey = key;
@@ -58,10 +64,10 @@ export class TrayController {
 			// Alternate file names: some platforms cache images by path.
 			this.flip = !this.flip;
 			const file = join(this.cacheDir, `tray-${this.flip ? "a" : "b"}.png`);
-			await Bun.write(file, this.render(progress, ink));
+			await Bun.write(file, this.render(progress, ink, colors));
 			const size = LOGICAL_SIZE[this.platform];
 			// macOS: Tray.setImage() would drop the template flag and size, so set it natively.
-			const done = this.platform === "mac" && setStatusItemTemplateImage(this.tray.ptr, file, size, size);
+			const done = this.platform === "mac" && setStatusItemTemplateImage(this.tray.ptr, file, size, size, template);
 			if (!done) this.tray.setImage(file);
 			await rm(join(this.cacheDir, `tray-${this.flip ? "b" : "a"}.png`), { force: true });
 		}
@@ -74,20 +80,34 @@ export class TrayController {
 		}
 	}
 
-	private async inkColor(theme: IconTheme): Promise<[number, number, number]> {
-		const BLACK: [number, number, number] = [0, 0, 0];
-		const WHITE: [number, number, number] = [255, 255, 255];
-		if (this.platform === "mac") return BLACK; // template image, recoloured by macOS
+	private async inkColor(theme: IconTheme, template: boolean): Promise<RGB> {
+		const BLACK: RGB = [0, 0, 0];
+		const WHITE: RGB = [255, 255, 255];
+		if (template) return BLACK; // template image, recoloured by macOS
 		if (theme === "light") return WHITE; // light ink for dark taskbars
 		if (theme === "dark") return BLACK;
 		return (await this.isSystemLightTheme()) ? BLACK : WHITE;
 	}
 
-	/** Windows: reads SystemUsesLightTheme (taskbar colour). Linux panels default to dark. */
+	/**
+	 * Windows: SystemUsesLightTheme (taskbar colour). macOS: light unless
+	 * AppleInterfaceStyle is "Dark". Linux panels default to dark.
+	 */
 	private async isSystemLightTheme(): Promise<boolean> {
-		if (this.platform !== "win") return false;
+		if (this.platform === "linux") return false;
 		if (this.systemLight && Date.now() - this.systemLight.at < 60_000) return this.systemLight.value;
 		let value = false;
+		if (this.platform === "mac") {
+			try {
+				const proc = Bun.spawn(["defaults", "read", "-g", "AppleInterfaceStyle"], { stdout: "pipe", stderr: "ignore" });
+				const out = await new Response(proc.stdout).text();
+				value = !/dark/i.test(out);
+			} catch {
+				// keep default
+			}
+			this.systemLight = { value, at: Date.now() };
+			return value;
+		}
 		try {
 			const proc = Bun.spawn(
 				["reg", "query", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "/v", "SystemUsesLightTheme"],

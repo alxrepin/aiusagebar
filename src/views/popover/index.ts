@@ -61,7 +61,8 @@ function providerGlyph(p: ProviderInfo | undefined, size = 18) {
 
 // ---- rings (same geometry as the tray icon) ---------------------------------
 
-function ringsSvg(progress: (number | null)[], size: number, highlight?: number) {
+/** `colors`: optional "#rrggbb" per ring; rings without one use the text ink. */
+function ringsSvg(progress: (number | null)[], size: number, highlight?: number, colors?: (string | undefined)[]) {
 	const n = Math.max(1, Math.min(3, progress.length || 2));
 	const items = progress.length ? progress : [null, null];
 	const s = size / 44;
@@ -73,6 +74,8 @@ function ringsSvg(progress: (number | null)[], size: number, highlight?: number)
 		const circ = 2 * Math.PI * r;
 		const dim = highlight !== undefined && highlight !== i;
 		const g = svg("g", { class: dim ? "ring dim" : "ring", transform: `rotate(-90 ${size / 2} ${size / 2})` });
+		const color = colors?.[i];
+		if (color) g.setAttribute("style", `color:${color}`);
 		g.append(svg("circle", { cx: size / 2, cy: size / 2, r, "stroke-width": width, class: "track" }));
 		if (p !== null && p > 0) {
 			const len = Math.min(1, p) * circ;
@@ -165,6 +168,8 @@ function renderSummary() {
 		ringsSvg(
 			rings.map((r) => r.progress),
 			84,
+			undefined,
+			rings.map((r) => r.color),
 		),
 		h(
 			"div",
@@ -177,6 +182,7 @@ function renderSummary() {
 						rings.map(() => 1),
 						14,
 						i,
+						rings.map((r) => r.color),
 					),
 					h(
 						"div",
@@ -196,12 +202,17 @@ function renderAccountCard(a: AccountInfo) {
 	const usage = state!.usage[a.id];
 	const status = state!.status[a.id] ?? { state: "idle" };
 
+	const color = state!.settings.providerColors[a.providerId];
 	const limits = (usage?.windows ?? []).map((w) =>
 		h(
 			"div",
 			{ class: "limit" },
 			h("div", { class: "limit-row" }, h("span", { class: "limit-label" }, w.label), h("span", { class: "limit-pct" }, pct(w.usedPercent))),
-			h("div", { class: "bar" }, h("i", { style: `width:${Math.max(0, Math.min(100, w.usedPercent))}%` })),
+			h(
+				"div",
+				{ class: "bar", style: color ? `--bar-color:${color}` : undefined },
+				h("i", { style: `width:${Math.max(0, Math.min(100, w.usedPercent))}%` }),
+			),
 			h("div", { class: "limit-meta" }, resetText(w)),
 		),
 	);
@@ -492,6 +503,71 @@ function renderUpdateProgress(u: AppState["update"]) {
 	);
 }
 
+const SWATCHES = ["#fa114f", "#ff9f0a", "#ffd60a", "#92e82a", "#1eeaef", "#0a84ff", "#bf5af2"];
+
+/** Per-provider ring colour: default (monochrome), a preset or a custom colour. */
+function renderColors() {
+	const s = state!;
+	const providerIds = [...new Set(s.accounts.map((a) => a.providerId))];
+	if (!providerIds.length) return null;
+	const setColor = (providerId: string, color: string | null) => {
+		const next = { ...s.settings.providerColors };
+		if (color) next[providerId] = color;
+		else delete next[providerId];
+		void act(() => bridge.request.updateSettings({ providerColors: next }));
+	};
+	return h(
+		"section",
+		{ class: "group" },
+		h("h3", null, t("ringColors")),
+		h(
+			"div",
+			{ class: "list glass" },
+			...providerIds.map((id) => {
+				const p = providerOf(id);
+				const current = s.settings.providerColors[id];
+				const custom = current && !SWATCHES.includes(current) ? current : undefined;
+				return h(
+					"div",
+					{ class: "row color-row" },
+					providerGlyph(p),
+					h("div", { class: "row-text" }, h("div", { class: "name" }, p?.displayName ?? id)),
+					h(
+						"div",
+						{ class: "swatches", role: "radiogroup" },
+						h("button", {
+							class: `swatch default${!current ? " active" : ""}`,
+							title: t("colorDefault"),
+							"aria-checked": String(!current),
+							role: "radio",
+							onClick: () => setColor(id, null),
+						}),
+						...SWATCHES.map((c) =>
+							h("button", {
+								class: `swatch${current === c ? " active" : ""}`,
+								style: `--swatch:${c}`,
+								title: c,
+								role: "radio",
+								"aria-checked": String(current === c),
+								onClick: () => setColor(id, c),
+							}),
+						),
+						h(
+							"label",
+							{ class: `swatch custom${custom ? " active" : ""}`, title: t("colorCustom"), style: custom ? `--swatch:${custom}` : undefined },
+							h("input", {
+								type: "color",
+								value: current ?? "#ffffff",
+								onChange: (e: Event) => setColor(id, (e.target as HTMLInputElement).value),
+							}),
+						),
+					),
+				);
+			}),
+		),
+	);
+}
+
 /** Preset thresholds, plus the current value if it was set to something custom. */
 function thresholdOptions(current: number) {
 	const presets = [5, 10, 15, 20, 25, 30, 50];
@@ -583,6 +659,7 @@ function renderSettings() {
 					),
 				)
 			: null,
+		renderColors(),
 		h(
 			"section",
 			{ class: "group" },
@@ -656,20 +733,24 @@ function renderSettings() {
 								onChange: (e: Event) => act(() => bridge.request.updateSettings({ showPercentInMenuBar: (e.target as HTMLInputElement).checked })),
 							}),
 						)
-					: h(
+					: null,
+				// macOS only needs this when provider colours are used (then the icon isn't a template).
+				s.platform !== "mac" || Object.keys(s.settings.providerColors).length
+					? h(
 							"div",
 							{ class: "row" },
 							h("div", { class: "row-text" }, h("div", { class: "name" }, t("trayIcon"))),
 							select(
 								s.settings.iconTheme,
 								[
-									["auto", t("iconAuto")],
+									["auto", s.platform === "mac" ? t("iconAutoMac") : t("iconAuto")],
 									["light", t("iconLight")],
 									["dark", t("iconDark")],
 								],
 								(v) => act(() => bridge.request.updateSettings({ iconTheme: v as AppState["settings"]["iconTheme"] })),
 							),
-						),
+						)
+					: null,
 			),
 		),
 		renderAbout(),

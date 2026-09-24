@@ -67,7 +67,13 @@ function load(): Api | null {
 }
 
 /** Returns false if the native path is unavailable; the caller should fall back to Tray.setImage(). */
-export function setStatusItemTemplateImage(statusItem: Pointer | null, path: string, width: number, height: number): boolean {
+export function setStatusItemTemplateImage(
+	statusItem: Pointer | null,
+	path: string,
+	width: number,
+	height: number,
+	template = true,
+): boolean {
 	const o = load();
 	if (!o || !statusItem) return false;
 	try {
@@ -81,7 +87,8 @@ export function setStatusItemTemplateImage(statusItem: Pointer | null, path: str
 		o.send(str, o.sel("release"));
 		if (!image) return false;
 
-		o.sendBool(image, o.sel("setTemplate:"), true);
+		// Coloured rings can't be a template image (macOS would flatten them to one colour).
+		o.sendBool(image, o.sel("setTemplate:"), template);
 		o.sendSize(image, o.sel("setSize:"), width, height);
 
 		const button = o.send(statusItem, o.sel("button"));
