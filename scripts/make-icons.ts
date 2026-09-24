@@ -1,10 +1,11 @@
 // Generates the app icons from the same ring renderer as the tray icon:
 //   assets/icon.iconset/*  (macOS, turned into .icns by the Electrobun build)
-//   assets/icon.png        (Windows / Linux)
+//   assets/icon.png        (Linux)
+//   assets/icon.ico        (Windows: exe, shortcuts, installer; 16–256 px)
 // Run: bun scripts/make-icons.ts
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { encodePng } from "../src/bun/tray/png";
+import { encodeIco, encodePng } from "../src/bun/tray/png";
 import { renderRings } from "../src/bun/tray/ringsIcon";
 
 const root = join(import.meta.dir, "..");
@@ -62,4 +63,5 @@ for (const base of [16, 32, 128, 256, 512]) {
 	await Bun.write(join(iconset, `icon_${base}x${base}@2x.png`), appIcon(base * 2));
 }
 await Bun.write(join(root, "assets/icon.png"), appIcon(512));
+await Bun.write(join(root, "assets/icon.ico"), encodeIco([16, 24, 32, 48, 64, 128, 256].map((size) => ({ size, png: appIcon(size) }))));
 console.log("icons written to assets/");

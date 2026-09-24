@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { Tray } from "electrobun/bun";
 import type { AppState, IconTheme } from "../../shared/types";
 import { setStatusItemTemplateImage } from "./macStatusImage";
+import { encodeIco } from "./png";
 import { hexToRgb, renderRingsPng, type RGB } from "./ringsIcon";
 
 type Platform = AppState["platform"];
@@ -30,22 +31,25 @@ export class TrayController {
 		// Create the tray with a real image: Electrobun applies `template` and the
 		// point size only at creation time.
 		mkdirSync(cacheDir, { recursive: true });
-		const initial = join(cacheDir, "tray-initial.png");
+		const initial = join(cacheDir, `tray-initial.${this.ext}`);
 		writeFileSync(initial, this.render([], platform === "mac" ? [0, 0, 0] : [255, 255, 255]));
 		this.tray = new Tray({ title: "", image: initial, template: platform === "mac", width: size, height: size });
 	}
 
+	/** Windows tray icons must be .ico (LoadImage(IMAGE_ICON) can't read PNG). */
+	private get ext() {
+		return this.platform === "win" ? "ico" : "png";
+	}
+
 	private render(progress: (number | null)[], color: RGB, colors?: (RGB | null)[]) {
-		return renderRingsPng({
-			size: LOGICAL_SIZE[this.platform] * 2,
-			progress,
-			color,
-			colors,
-			weight: "thin",
-			trackAlpha: 0.32,
-			// @2x: tells macOS the image is LOGICAL_SIZE points, not pixels.
-			dpi: 144,
-		});
+		const png = (size: number, dpi?: number) =>
+			renderRingsPng({ size, progress, color, colors, weight: "thin", trackAlpha: 0.32, dpi });
+		if (this.platform === "win") {
+			// One entry per common DPI scale (100–300%) so Windows never has to resample.
+			return encodeIco([16, 20, 24, 32, 40, 48].map((size) => ({ size, png: png(size) })));
+		}
+		// @2x: tells macOS the image is LOGICAL_SIZE points, not pixels.
+		return png(LOGICAL_SIZE[this.platform] * 2, 144);
 	}
 
 	async update(state: AppState) {
@@ -63,13 +67,13 @@ export class TrayController {
 			await mkdir(this.cacheDir, { recursive: true });
 			// Alternate file names: some platforms cache images by path.
 			this.flip = !this.flip;
-			const file = join(this.cacheDir, `tray-${this.flip ? "a" : "b"}.png`);
+			const file = join(this.cacheDir, `tray-${this.flip ? "a" : "b"}.${this.ext}`);
 			await Bun.write(file, this.render(progress, ink, colors));
 			const size = LOGICAL_SIZE[this.platform];
 			// macOS: Tray.setImage() would drop the template flag and size, so set it natively.
 			const done = this.platform === "mac" && setStatusItemTemplateImage(this.tray.ptr, file, size, size, template);
 			if (!done) this.tray.setImage(file);
-			await rm(join(this.cacheDir, `tray-${this.flip ? "b" : "a"}.png`), { force: true });
+			await rm(join(this.cacheDir, `tray-${this.flip ? "b" : "a"}.${this.ext}`), { force: true });
 		}
 
 		if (this.platform === "mac") {

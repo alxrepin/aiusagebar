@@ -39,7 +39,8 @@ export default {
 		win: {
 			defaultRenderer: "native",
 			bundleCEF: false,
-			icon: "assets/icon.png",
+			// Real multi-size .ico (Electrobun copies it to Resources/app.ico).
+			icon: "assets/icon.ico",
 		},
 		linux: {
 			defaultRenderer: "native",
@@ -48,6 +49,8 @@ export default {
 		},
 	},
 	scripts: {
+		// Windows: embed the icon into launcher.exe / bun.exe before packaging.
+		postBuild: "scripts/win-icons.ts",
 		postWrap: "scripts/adhoc-sign.ts",
 	},
 	release: {

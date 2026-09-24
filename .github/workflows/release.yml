@@ -69,6 +69,11 @@ jobs:
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
           ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
           ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
+      - name: Single-file Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+          bun scripts/make-win-installer.ts
       - name: Collect installers
         run: bun scripts/collect-release.ts ${{ matrix.label }}
       - uses: actions/upload-artifact@v4
@@ -104,7 +109,7 @@ jobs:
             | Platform | File |
             | --- | --- |
             | macOS (Apple Silicon) | `AIUsageBar-${{ needs.check.outputs.version }}-macos-arm64.dmg` |
-            | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64-Setup.zip` |
+            | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64-Setup.exe` |
 
             Already installed? AIUsageBar updates itself: open the popover and click **Update**.
             The `stable-*` files are the in-app update feed; you don't need to download them.

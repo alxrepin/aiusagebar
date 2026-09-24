@@ -72,7 +72,7 @@ Or grab the file for your system from the [Releases page](https://github.com/alx
 | System | File |
 | --- | --- |
 | macOS (Apple Silicon) | `AIUsageBar-<version>-macos-arm64.dmg` |
-| Windows 10 / 11 (x64) | `AIUsageBar-<version>-windows-x64-Setup.zip` |
+| Windows 10 / 11 (x64) | `AIUsageBar-<version>-windows-x64-Setup.exe` |
 
 Once installed, AIUsageBar **updates itself**: when a new version is out, the popover shows an **Update** button.
 

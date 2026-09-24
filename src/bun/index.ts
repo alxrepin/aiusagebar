@@ -6,6 +6,7 @@ import { Popover } from "./popover/popover";
 import { ConfigStore } from "./store/config";
 import { createSecretStore } from "./store/secrets";
 import { setLaunchAtLogin } from "./system/launchAtLogin";
+import { openUrl } from "./system/openUrl";
 import { TrayController } from "./tray/trayController";
 import { UpdateController } from "./update/updateController";
 import { UsageService } from "./usage/service";
@@ -28,7 +29,7 @@ const service = new UsageService({
 	platform,
 	notify: (title, body) => Utils.showNotification({ title, body }),
 	baseContext: {
-		openUrl: (url) => Utils.openExternal(url),
+		openUrl,
 		fetch,
 		homeDir: homedir(),
 		platform: process.platform,
