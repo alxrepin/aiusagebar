@@ -1,6 +1,6 @@
 {
   "name": "aiusagebar",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "ChatGPT & Claude usage limits as Apple Fitness\u2013style activity rings in your menu bar / system tray.",
   "private": true,
   "type": "module",
