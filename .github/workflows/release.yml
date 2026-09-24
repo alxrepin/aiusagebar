@@ -104,7 +104,7 @@ jobs:
             | Platform | File |
             | --- | --- |
             | macOS (Apple Silicon) | `AIUsageBar-${{ needs.check.outputs.version }}-macos-arm64.dmg` |
-            | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64*` |
+            | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64-Setup.zip` |
 
             **macOS:** the build is not notarised. After dragging it to Applications, run
             `xattr -dr com.apple.quarantine /Applications/AIUsageBar.app` once (or right-click → Open).

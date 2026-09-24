@@ -3,6 +3,7 @@ import { getProvider, listProviders } from "../providers/registry";
 import { RateLimitedError, ReauthRequiredError, type Credentials, type ProviderContext } from "../providers/types";
 import { normalizeSettings, type ConfigStore } from "../store/config";
 import type { SecretStore } from "../store/secrets";
+import { checkLowLimits, clearAccountAlerts } from "./alerts";
 import { resolveRings } from "./rings";
 
 export interface ServiceDeps {
@@ -10,6 +11,8 @@ export interface ServiceDeps {
 	secrets: SecretStore;
 	platform: AppState["platform"];
 	baseContext: Omit<ProviderContext, "signal">;
+	/** Shows a system notification (low-limit alerts). */
+	notify?: (title: string, body: string) => void;
 	now?: () => number;
 }
 
@@ -135,6 +138,7 @@ export class UsageService {
 			if (result.credentials) await this.deps.secrets.set(secretKey(accountId), JSON.stringify(result.credentials));
 			const snapshot: UsageSnapshot = { ...result.usage, accountId, fetchedAt: new Date(this.now).toISOString() };
 			this.data.usage[accountId] = snapshot;
+			this.checkAlerts(account, snapshot);
 			this.status[accountId] = { state: "ok" };
 			this.failures.delete(accountId);
 			this.backoffUntil.delete(accountId);
@@ -153,6 +157,27 @@ export class UsageService {
 			console.warn(`[usage] ${account.providerId}/${account.label}: ${message}`);
 		} finally {
 			this.emit();
+		}
+	}
+
+	private checkAlerts(account: AccountInfo, snapshot: UsageSnapshot) {
+		const alerted = new Set(this.data.alerted);
+		const alerts = checkLowLimits({
+			settings: this.data.settings,
+			account,
+			providerName: getProvider(account.providerId)?.displayName ?? account.providerId,
+			snapshot,
+			alerted,
+			multiAccount: this.data.accounts.filter((a) => a.providerId === account.providerId).length > 1,
+			now: this.now,
+		});
+		this.data.alerted = [...alerted];
+		for (const a of alerts) {
+			try {
+				this.deps.notify?.(a.title, a.body);
+			} catch (err) {
+				console.warn("[alerts] notification failed:", err);
+			}
 		}
 	}
 
@@ -209,6 +234,9 @@ export class UsageService {
 		this.data.accounts = this.data.accounts.filter((a) => a.id !== accountId);
 		delete this.data.usage[accountId];
 		delete this.status[accountId];
+		const alerted = new Set(this.data.alerted);
+		clearAccountAlerts(alerted, accountId);
+		this.data.alerted = [...alerted];
 		this.failures.delete(accountId);
 		this.backoffUntil.delete(accountId);
 		// Drop ring slots that pointed at this account.
@@ -234,6 +262,14 @@ export class UsageService {
 		this.data.settings = normalizeSettings({ ...this.data.settings, ...patch });
 		await this.deps.config.save();
 		if (this.data.settings.refreshMinutes !== before && this.timer) this.schedule();
+		// Re-evaluate alerts against the data we already have (e.g. alerts just enabled or threshold raised).
+		if ("alertsEnabled" in patch || "alertThreshold" in patch) {
+			for (const a of this.data.accounts) {
+				const u = this.data.usage[a.id];
+				if (u) this.checkAlerts(a, u);
+			}
+			await this.deps.config.save();
+		}
 		this.emit();
 	}
 

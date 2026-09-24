@@ -88,6 +88,10 @@ export interface Settings {
 	iconTheme: IconTheme;
 	/** Show a percentage next to the icon (macOS menu bar only). */
 	showPercentInMenuBar: boolean;
+	/** Send a system notification when a limit runs low. */
+	alertsEnabled: boolean;
+	/** Notify when less than this share (percent) of a limit is left. */
+	alertThreshold: number;
 }
 
 /** A ring after resolution: what is actually drawn. */

@@ -1,7 +1,7 @@
 {
   "name": "aiusagebar",
-  "version": "0.1.0",
-  "description": "Tray app that shows how much of your ChatGPT / Claude limits you have used, as activity rings.",
+  "version": "0.2.0",
+  "description": "ChatGPT & Claude usage limits as Apple Fitness\u2013style activity rings in your menu bar / system tray.",
   "private": true,
   "type": "module",
   "scripts": {
