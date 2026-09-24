@@ -4,7 +4,7 @@ import type { AppState } from "../../shared/types";
 import { isRu } from "../i18n";
 import { openUrl } from "../system/openUrl";
 import type { UpdateController } from "../update/updateController";
-import { makeToolWindow, watchForeground } from "./winWindow";
+import { makeToolWindow, watchOutsideClicks } from "./winWindow";
 import type { UsageService } from "../usage/service";
 import { popoverPosition, type Rect } from "./position";
 
@@ -24,7 +24,8 @@ export class Popover {
 	private height = 420;
 	private anchorTray: Rect = { x: 0, y: 0, width: 0, height: 0 };
 	private rpc;
-	/** Windows: stops the foreground watcher that dismisses the popover. */
+	private shownAt = 0;
+	/** Windows: stops the outside-click watcher that dismisses the popover. */
 	private stopWatch: (() => void) | null = null;
 
 	constructor(
@@ -32,6 +33,7 @@ export class Popover {
 		private service: UsageService,
 		updates: UpdateController,
 		private getTrayBounds: () => Rect,
+		onQuit: () => void,
 	) {
 		const svc = service;
 		this.rpc = BrowserView.defineRPC<PopoverRPC>({
@@ -83,9 +85,8 @@ export class Popover {
 						return svc.getState();
 					},
 					quit: () => {
-						svc.stop();
-						updates.stop();
-						Utils.quit();
+						this.hide();
+						onQuit();
 					},
 				},
 				messages: {
@@ -131,10 +132,15 @@ export class Popover {
 	}
 
 	toggle() {
-		if (this.visible) return this.hide();
-		// Clicking the tray icon while open first blurs the window (hiding it);
-		// don't immediately reopen on the same click.
-		if (Date.now() - this.hiddenAt < 300) return;
+		const now = Date.now();
+		// A repeated event for the same click must not close it right away.
+		if (this.visible) {
+			if (now - this.shownAt >= 400) this.hide();
+			return;
+		}
+		// Clicking the tray icon while open first dismisses the window (as a
+		// click outside it); don't immediately reopen on the same click.
+		if (now - this.hiddenAt < 600) return;
 		this.show();
 	}
 
@@ -142,16 +148,17 @@ export class Popover {
 		this.anchorTray = this.getTrayBounds();
 		this.place();
 		this.visible = true;
+		this.shownAt = Date.now();
 		this.win.setAlwaysOnTop(true);
 		this.win.show();
 		this.win.focus();
 		this.rpc.send.shown({});
 		this.rpc.send.state(this.service.getState());
 		void this.service.refreshIfStale();
-		// Windows: close when the user switches to another app (see winWindow.ts).
+		// Windows: close on a click outside the popover (see winWindow.ts).
 		if (this.platform === "win") {
 			this.stopWatch?.();
-			this.stopWatch = watchForeground(() => this.hide());
+			this.stopWatch = watchOutsideClicks(this.win.ptr, () => this.hide());
 		}
 	}
 

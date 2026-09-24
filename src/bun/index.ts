@@ -7,6 +7,7 @@ import { ConfigStore } from "./store/config";
 import { createSecretStore } from "./store/secrets";
 import { setLaunchAtLogin } from "./system/launchAtLogin";
 import { openUrl } from "./system/openUrl";
+import { quitApp } from "./system/quit";
 import { TrayController } from "./tray/trayController";
 import { UpdateController } from "./update/updateController";
 import { UsageService } from "./usage/service";
@@ -60,7 +61,13 @@ Updater.onStatusChange((entry) => {
 });
 
 const tray = new TrayController(platform, cacheDir);
-const popover = new Popover(platform, service, updates, () => tray.tray.getBounds());
+const quit = () =>
+	quitApp(() => {
+		service.stop();
+		updates.stop();
+		tray.tray.remove();
+	});
+const popover = new Popover(platform, service, updates, () => tray.tray.getBounds(), quit);
 
 tray.tray.on("tray-clicked", (event) => {
 	const action = (event as { data?: { action?: string } }).data?.action ?? "";
@@ -69,9 +76,7 @@ tray.tray.on("tray-clicked", (event) => {
 			void service.refreshAll({ force: true });
 			break;
 		case "quit":
-			service.stop();
-			updates.stop();
-			Utils.quit();
+			quit();
 			break;
 		default:
 			popover.toggle();
