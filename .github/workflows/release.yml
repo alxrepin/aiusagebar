@@ -1,0 +1,111 @@
+name: Build & Release
+
+# Every push to main builds macOS + Windows. If package.json has a version
+# that has no tag yet, a GitHub Release vX.Y.Z is published automatically.
+# Pushing a tag vX.Y.Z or running the workflow manually also publishes.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck & tests
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      publish: ${{ steps.meta.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - name: Decide whether to publish
+        id: meta
+        run: |
+          VERSION=$(bun -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.ref_type }}" = "tag" ]; then
+            PUBLISH=true
+          elif git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists — build only. Bump package.json version to release."
+            PUBLISH=false
+          else
+            PUBLISH=true
+          fi
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION, publish: $PUBLISH"
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: macos-arm64
+          - os: windows-latest
+            label: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Build (stable)
+        run: bun run build:stable
+        env:
+          # Optional: real Apple signing / notarisation. Ad-hoc signing is used when absent.
+          ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
+          ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
+          ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
+          ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
+      - name: Collect installers
+        run: bun scripts/collect-release.ts ${{ matrix.label }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AIUsageBar-${{ matrix.label }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: [check, build]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: ls -la dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', needs.check.outputs.version) }}
+          name: AIUsageBar ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', needs.check.outputs.version) }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          make_latest: true
+          files: dist/*
+          body: |
+            ## Download
+
+            | Platform | File |
+            | --- | --- |
+            | macOS (Apple Silicon) | `AIUsageBar-${{ needs.check.outputs.version }}-macos-arm64.dmg` |
+            | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64*` |
+
+            **macOS:** the build is not notarised. After dragging it to Applications, run
+            `xattr -dr com.apple.quarantine /Applications/AIUsageBar.app` once (or right-click → Open).
+            **Windows:** SmartScreen may warn about an unknown publisher → *More info* → *Run anyway*.

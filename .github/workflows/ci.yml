@@ -1,11 +1,13 @@
 name: CI
 
 on:
-  push:
   pull_request:
+  push:
+    branches-ignore: [main]
 
 jobs:
   check:
+    name: Typecheck & tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

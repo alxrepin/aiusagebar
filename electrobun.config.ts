@@ -1,11 +1,18 @@
 import type { ElectrobunConfig } from "electrobun";
+import pkg from "./package.json";
+
+// Real Apple signing is opt-in: set ELECTROBUN_DEVELOPER_ID (and, for
+// notarisation, ELECTROBUN_TEAMID + ELECTROBUN_APPLEID/ELECTROBUN_APPLEIDPASS)
+// as CI secrets. Without them the app is ad-hoc signed in the postWrap hook.
+const developerId = !!process.env.ELECTROBUN_DEVELOPER_ID;
+const notarize = developerId && !!process.env.ELECTROBUN_TEAMID;
 
 export default {
 	app: {
 		name: "AIUsageBar",
 		identifier: "dev.aiusagebar.app",
-		version: "0.1.0",
-		description: "ChatGPT & Claude limits as activity rings in your menu bar / tray.",
+		version: pkg.version,
+		description: pkg.description,
 	},
 	build: {
 		bun: {
@@ -25,6 +32,9 @@ export default {
 			defaultRenderer: "native",
 			bundleCEF: false,
 			icons: "assets/icon.iconset",
+			codesign: developerId,
+			notarize,
+			createDmg: true,
 		},
 		win: {
 			defaultRenderer: "native",
@@ -36,6 +46,9 @@ export default {
 			bundleCEF: false,
 			icon: "assets/icon.png",
 		},
+	},
+	scripts: {
+		postWrap: "scripts/adhoc-sign.ts",
 	},
 	runtime: {
 		// It's a tray app: hiding the popover must not quit it.
