@@ -46,3 +46,22 @@ test("menu bar icon: pHYs chunk marks @2x (144 dpi) so macOS sizes it in points"
 test("thin weight is lighter than the bold UI rings", () => {
 	expect(ringGeometry(36, 2, "thin")[0]!.halfWidth).toBeLessThan(ringGeometry(36, 2, "bold")[0]!.halfWidth);
 });
+
+test("per-ring colours: each ring keeps its own colour, uncoloured rings use the ink", async () => {
+	const { renderRings, ringGeometry } = await import("../src/bun/tray/ringsIcon");
+	const size = 44;
+	const px = renderRings({ size, progress: [1, 1], color: [255, 255, 255], colors: [[250, 17, 79], null] });
+	const [outer, inner] = ringGeometry(size, 2);
+	const at = (r: number) => {
+		const o = ((Math.floor(size / 2 - r)) * size + Math.floor(size / 2)) * 4; // straight up from centre
+		return [...px.slice(o, o + 4)];
+	};
+	expect(at(outer!.radius)).toEqual([250, 17, 79, 255]);
+	expect(at(inner!.radius)).toEqual([255, 255, 255, 255]);
+});
+
+test("hexToRgb", async () => {
+	const { hexToRgb } = await import("../src/bun/tray/ringsIcon");
+	expect(hexToRgb("#FA114F")).toEqual([250, 17, 79]);
+	expect(hexToRgb("nope")).toBeNull();
+});

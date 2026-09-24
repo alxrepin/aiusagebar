@@ -24,7 +24,7 @@ export function autoRingRefs(accounts: AccountInfo[], usage: Record<string, Usag
 }
 
 export function resolveRings(
-	settings: Pick<Settings, "ringMode" | "rings">,
+	settings: Pick<Settings, "ringMode" | "rings"> & Partial<Pick<Settings, "providerColors">>,
 	accounts: AccountInfo[],
 	usage: Record<string, UsageSnapshot | undefined>,
 ): ResolvedRing[] {
@@ -48,6 +48,7 @@ export function resolveRings(
 			shortLabel: w?.shortLabel ?? ref.windowId,
 			progress: w ? w.usedPercent / 100 : null,
 			resetsAt: w?.resetsAt,
+			color: settings.providerColors?.[account.providerId],
 		};
 	});
 }

@@ -40,6 +40,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Smart default layout:**
   - one provider connected: its session (5-hour) and weekly limits;
   - several providers: the session limit of each.
+- **Ring colour per provider.** Monochrome by default (it follows the menu bar / taskbar like system icons); pick a preset (Apple Fitness red, green, cyan…) or any custom colour. Applies to the tray icon, the rings and the progress bars.
 - **Fully customisable.** Put any metric of any account into any ring, e.g. "Claude · Weekly · Opus".
 - **Details on click:** percentages, progress bars, "resets in 2h 18m · 12:10", your plan (Plus, Pro, Max…).
 - **Low-limit alerts.** A system notification when less than a set share of a limit is left (15% by default). One notification per limit, re-armed after the limit resets. The threshold and the alerts themselves are configurable.
@@ -144,6 +145,7 @@ The gear icon in the popover opens Settings:
 
 - **Accounts:** connected accounts, remove, add new;
 - **Rings:** "Auto" or "Custom" — pick the metric for the outer, middle and inner ring;
+- **Ring colours:** default monochrome, a preset or a custom colour for each connected provider;
 - **Notifications:** turn low-limit alerts on or off and choose the threshold — 5, 10, 15, 20, 25, 30 or 50% left (default 15%);
 - **Launch at login:** on by default;
 - **Refresh every** 1, 2, 5, 10, 15 or 30 minutes;

@@ -94,6 +94,8 @@ export interface Settings {
 	alertThreshold: number;
 	/** Start AIUsageBar when the user logs in. */
 	launchAtLogin: boolean;
+	/** Ring colour per provider id ("#rrggbb"). Missing = default monochrome ink. */
+	providerColors: Record<string, string>;
 }
 
 /** A ring after resolution: what is actually drawn. */
@@ -106,6 +108,8 @@ export interface ResolvedRing {
 	/** 0..1, or null when there is no data yet. */
 	progress: number | null;
 	resetsAt?: string;
+	/** "#rrggbb" when the provider has a custom colour; undefined = monochrome. */
+	color?: string;
 }
 
 export interface UpdateState {

@@ -6,7 +6,9 @@ export interface RingsIconOptions {
 	/** One entry per ring, outermost first. 0..1 or null (= no data yet). */
 	progress: (number | null)[];
 	/** RGB of the monochrome ink. macOS template images should use black. */
-	color: [number, number, number];
+	color: RGB;
+	/** Optional per-ring colour (outermost first); rings without one use `color`. */
+	colors?: (RGB | null | undefined)[];
 	/** Opacity of the unfilled track. */
 	trackAlpha?: number;
 	/** "bold" = chunky Fitness rings (app UI, small Windows tray); "thin" = menu-bar weight. */
@@ -16,6 +18,12 @@ export interface RingsIconOptions {
 }
 
 export type RingWeight = "bold" | "thin";
+export type RGB = [number, number, number];
+
+export function hexToRgb(hex: string): RGB | null {
+	const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+	return m ? [parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16)] : null;
+}
 
 // Stroke widths, gaps and outer margin on a 44px reference canvas, per ring count (1, 2, 3).
 const WEIGHTS: Record<RingWeight, { width: number[]; gap: number[]; margin: number }> = {
@@ -87,27 +95,48 @@ export function renderRings(opts: RingsIconOptions): Uint8Array {
 	const SS = 4;
 	const c = size / 2;
 
+	const inks = geo.map((_, i) => opts.colors?.[i] ?? color);
+
 	for (let y = 0; y < size; y++) {
 		for (let x = 0; x < size; x++) {
+			// Rings never overlap, so each subsample belongs to at most one ring.
+			// Accumulate premultiplied colour so edges between colours stay clean.
 			let acc = 0;
+			let r = 0;
+			let g = 0;
+			let b = 0;
 			for (let sy = 0; sy < SS; sy++) {
 				for (let sx = 0; sx < SS; sx++) {
 					const dx = x + (sx + 0.5) / SS - c;
 					const dy = y + (sy + 0.5) / SS - c;
 					let a = 0;
+					let ink = color;
 					for (let i = 0; i < geo.length; i++) {
-						a = Math.max(a, ringAlpha(dx, dy, geo[i]!, progress[i] ?? null, trackAlpha));
+						const ai = ringAlpha(dx, dy, geo[i]!, progress[i] ?? null, trackAlpha);
+						if (ai > a) {
+							a = ai;
+							ink = inks[i]!;
+						}
 						if (a === 1) break;
 					}
 					acc += a;
+					r += ink[0] * a;
+					g += ink[1] * a;
+					b += ink[2] * a;
 				}
 			}
-			const alpha = acc / (SS * SS);
 			const o = (y * size + x) * 4;
-			px[o] = color[0];
-			px[o + 1] = color[1];
-			px[o + 2] = color[2];
-			px[o + 3] = Math.round(alpha * 255);
+			const n = SS * SS;
+			if (acc > 0) {
+				px[o] = Math.round(r / acc);
+				px[o + 1] = Math.round(g / acc);
+				px[o + 2] = Math.round(b / acc);
+			} else {
+				px[o] = color[0];
+				px[o + 1] = color[1];
+				px[o + 2] = color[2];
+			}
+			px[o + 3] = Math.round((acc / n) * 255);
 		}
 	}
 	return px;
