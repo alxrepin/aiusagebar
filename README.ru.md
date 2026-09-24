@@ -132,7 +132,7 @@ macOS и Windows помечают файлы, скачанные **браузе�
 
   | Система | Где хранятся токены |
   | --- | --- |
-  | macOS | Связка ключей (login Keychain), сервис `AIUsageBar` |
+  | macOS | Файлы, зашифрованные AES-256-GCM; ключ хранится в Связке ключей (login Keychain), сервис `AIUsageBar` |
   | Windows | Файл, зашифрованный DPAPI для текущего пользователя |
   | Linux | Secret Service / libsecret, без него — файл с правами `0600` |
 
