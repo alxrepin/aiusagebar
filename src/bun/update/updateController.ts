@@ -81,12 +81,19 @@ export class UpdateController {
 		return this.state;
 	}
 
+	/** Download progress reported by the feed (0..100). */
+	setProgress(progress: number) {
+		if (this.state.status !== "downloading") return;
+		const p = Math.max(0, Math.min(100, Math.round(progress)));
+		if (p !== this.state.progress) this.set({ progress: p });
+	}
+
 	async install(): Promise<UpdateState> {
 		if (this.state.status !== "available") return this.state;
 		try {
-			this.set({ status: "downloading", error: undefined });
+			this.set({ status: "downloading", error: undefined, progress: undefined });
 			await this.deps.feed.download();
-			this.set({ status: "installing" });
+			this.set({ status: "installing", progress: 100 });
 			await this.deps.feed.apply();
 		} catch (err) {
 			this.set({ status: "error", error: err instanceof Error ? err.message : String(err) });

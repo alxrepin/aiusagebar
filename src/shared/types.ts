@@ -114,6 +114,8 @@ export interface UpdateState {
 	status: "idle" | "checking" | "none" | "available" | "downloading" | "installing" | "error";
 	/** Version offered by the update feed, when one is available. */
 	availableVersion?: string;
+	/** 0..100 while downloading, when the size is known. */
+	progress?: number;
 	error?: string;
 	checkedAt?: string;
 }
