@@ -1,0 +1,811 @@
+/* AIUsageBar popover.
+ * One markup, three skins picked by <html data-platform>:
+ *   mac   – Liquid Glass: translucent layered panel, specular rim, capsule controls
+ *   win   – Windows 11 Fluent: Mica-like surface, 8px overlay radius, Segoe UI Variable
+ *   linux – neutral, close to libadwaita
+ * Monochrome throughout: all "colour" is the text ink at different opacities.
+ */
+
+:root {
+	color-scheme: light dark;
+	--window-pad: 10px;
+
+	--ink: 0 0 0;
+	--fg: rgb(var(--ink) / 0.88);
+	--fg-2: rgb(var(--ink) / 0.56);
+	--fg-3: rgb(var(--ink) / 0.36);
+	--hair: rgb(var(--ink) / 0.1);
+	--track: rgb(var(--ink) / 0.14);
+
+	--font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", "Inter", "Cantarell", system-ui, sans-serif;
+	--fs: 13px;
+	--fs-small: 11px;
+
+	--panel-radius: 14px;
+	--panel-bg: rgb(250 250 250);
+	--panel-border: 1px solid var(--hair);
+	--panel-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+	--panel-blur: none;
+
+	--card-radius: 10px;
+	--card-bg: rgb(var(--ink) / 0.04);
+	--card-border: 1px solid transparent;
+	--card-shadow: none;
+
+	--ctl-radius: 8px;
+	--ctl-bg: rgb(var(--ink) / 0.06);
+	--ctl-bg-hover: rgb(var(--ink) / 0.1);
+	--ctl-border: 1px solid transparent;
+	--primary-bg: rgb(var(--ink) / 0.86);
+	--primary-fg: rgb(255 255 255);
+
+	--bar-h: 6px;
+	--bar-radius: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--ink: 255 255 255;
+		--panel-bg: rgb(36 36 38);
+		--primary-fg: rgb(20 20 20);
+		--panel-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+	}
+}
+
+/* ---------- macOS · Liquid Glass ---------- */
+
+:root[data-platform="mac"] {
+	--window-pad: 12px;
+	--fs: 13px;
+	--panel-radius: 26px;
+	--panel-bg: linear-gradient(180deg, rgb(255 255 255 / 0.8), rgb(246 246 250 / 0.72));
+	--panel-border: 0.5px solid rgb(255 255 255 / 0.75);
+	--panel-shadow:
+		0 0 0 0.5px rgb(0 0 0 / 0.12),
+		0 18px 44px -8px rgb(0 0 0 / 0.28),
+		inset 0 1px 1.5px rgb(255 255 255 / 0.95),
+		inset 0 -1px 1px rgb(255 255 255 / 0.35);
+	--panel-blur: blur(40px) saturate(1.9);
+
+	--card-radius: 18px;
+	--card-bg: linear-gradient(180deg, rgb(255 255 255 / 0.62), rgb(255 255 255 / 0.36));
+	--card-border: 0.5px solid rgb(255 255 255 / 0.8);
+	--card-shadow: 0 1px 3px rgb(0 0 0 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.9);
+
+	--ctl-radius: 999px;
+	--ctl-bg: rgb(255 255 255 / 0.55);
+	--ctl-bg-hover: rgb(255 255 255 / 0.8);
+	--ctl-border: 0.5px solid rgb(0 0 0 / 0.08);
+	--bar-h: 6px;
+	--bar-radius: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root[data-platform="mac"] {
+		--panel-bg: linear-gradient(180deg, rgb(58 58 64 / 0.78), rgb(34 34 38 / 0.74));
+		--panel-border: 0.5px solid rgb(255 255 255 / 0.22);
+		--panel-shadow:
+			0 0 0 0.5px rgb(0 0 0 / 0.6),
+			0 18px 44px -8px rgb(0 0 0 / 0.6),
+			inset 0 1px 1px rgb(255 255 255 / 0.22),
+			inset 0 -1px 1px rgb(255 255 255 / 0.06);
+		--card-bg: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.05));
+		--card-border: 0.5px solid rgb(255 255 255 / 0.14);
+		--card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+		--ctl-bg: rgb(255 255 255 / 0.1);
+		--ctl-bg-hover: rgb(255 255 255 / 0.18);
+		--ctl-border: 0.5px solid rgb(255 255 255 / 0.12);
+	}
+}
+
+/* ---------- Windows 11 · Fluent ---------- */
+
+:root[data-platform="win"] {
+	--window-pad: 12px;
+	--font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+	--fs: 14px;
+	--fs-small: 12px;
+	--panel-radius: 8px;
+	--panel-bg: rgb(243 243 243 / 0.97);
+	--panel-border: 1px solid rgb(0 0 0 / 0.1);
+	--panel-shadow: 0 8px 16px rgb(0 0 0 / 0.14), 0 0 2px rgb(0 0 0 / 0.1);
+	--card-radius: 6px;
+	--card-bg: rgb(255 255 255 / 0.72);
+	--card-border: 1px solid rgb(0 0 0 / 0.06);
+	--ctl-radius: 4px;
+	--ctl-bg: rgb(255 255 255 / 0.7);
+	--ctl-bg-hover: rgb(249 249 249 / 0.5);
+	--ctl-border: 1px solid rgb(0 0 0 / 0.07);
+	--bar-h: 3px;
+	--bar-radius: 1.5px;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root[data-platform="win"] {
+		--panel-bg: rgb(32 32 32 / 0.97);
+		--panel-border: 1px solid rgb(255 255 255 / 0.08);
+		--panel-shadow: 0 8px 16px rgb(0 0 0 / 0.4), 0 0 2px rgb(0 0 0 / 0.4);
+		--card-bg: rgb(255 255 255 / 0.05);
+		--card-border: 1px solid rgb(0 0 0 / 0.1);
+		--ctl-bg: rgb(255 255 255 / 0.06);
+		--ctl-bg-hover: rgb(255 255 255 / 0.08);
+		--ctl-border: 1px solid rgb(255 255 255 / 0.07);
+	}
+}
+
+/* ---------- Linux ---------- */
+
+:root[data-platform="linux"] {
+	--font: "Cantarell", "Inter", "Ubuntu", system-ui, sans-serif;
+	--panel-radius: 12px;
+}
+
+/* ---------- layout ---------- */
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	background: transparent;
+	font: var(--fs) / 1.35 var(--font);
+	color: var(--fg);
+	-webkit-font-smoothing: antialiased;
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: default;
+	overflow: hidden;
+}
+
+#app {
+	padding: var(--window-pad);
+}
+
+.panel {
+	position: relative;
+	max-height: calc(100vh - 2 * var(--window-pad));
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 12px;
+	border-radius: var(--panel-radius);
+	background: var(--panel-bg);
+	border: var(--panel-border);
+	box-shadow: var(--panel-shadow);
+	backdrop-filter: var(--panel-blur);
+	-webkit-backdrop-filter: var(--panel-blur);
+	scrollbar-width: thin;
+}
+
+:root[data-platform="mac"] .panel {
+	padding: 14px;
+}
+
+/* Liquid Glass specular rim: a bright edge that fades towards the middle. */
+:root[data-platform="mac"] .panel::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	padding: 1px;
+	background: linear-gradient(160deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0) 30%, rgb(255 255 255 / 0) 70%, rgb(255 255 255 / 0.5));
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	opacity: 0.8;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root[data-platform="mac"] .panel::before {
+		opacity: 0.25;
+	}
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.glass {
+	border-radius: var(--card-radius);
+	background: var(--card-bg);
+	border: var(--card-border);
+	box-shadow: var(--card-shadow);
+}
+
+/* ---------- header ---------- */
+
+.head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 28px;
+	padding: 0 2px;
+}
+
+.head .title {
+	flex: 1;
+	font-weight: 600;
+	font-size: calc(var(--fs) + 2px);
+	letter-spacing: -0.01em;
+}
+
+:root[data-platform="win"] .head .title {
+	font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+	font-size: 16px;
+}
+
+.actions {
+	display: flex;
+	gap: 4px;
+}
+
+.icon {
+	display: block;
+	flex: none;
+}
+
+.icon-btn {
+	all: unset;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--ctl-radius);
+	color: var(--fg-2);
+	transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+	background: var(--ctl-bg-hover);
+	color: var(--fg);
+}
+
+.icon-btn:focus-visible,
+.btn:focus-visible,
+.seg:focus-visible,
+.select:focus-visible {
+	outline: 2px solid var(--fg-2);
+	outline-offset: 1px;
+}
+
+.spinning .icon {
+	animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ---------- rings ---------- */
+
+.rings {
+	display: block;
+	flex: none;
+}
+
+.rings .track,
+.rings .fill {
+	fill: none;
+	stroke: currentColor;
+}
+
+.rings .track {
+	opacity: 0.16;
+}
+
+.rings .fill {
+	transition: stroke-dasharray 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rings .dim {
+	opacity: 0.25;
+}
+
+.legend-row .rings .track,
+.row .rings .track {
+	opacity: 1;
+}
+
+/* ---------- summary ---------- */
+
+.summary {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px;
+}
+
+.legend {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.legend-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.legend-text {
+	flex: 1;
+	min-width: 0;
+}
+
+.legend-label {
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.legend-sub {
+	font-size: var(--fs-small);
+	color: var(--fg-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.legend-value {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	font-size: calc(var(--fs) + 2px);
+	letter-spacing: -0.02em;
+}
+
+/* ---------- account cards ---------- */
+
+.cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.card {
+	padding: 12px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.card-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.glyph {
+	flex: none;
+	color: var(--fg);
+}
+
+.card-title {
+	flex: 1;
+	min-width: 0;
+}
+
+.name {
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.sub {
+	font-size: var(--fs-small);
+	color: var(--fg-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pill {
+	flex: none;
+	font-size: var(--fs-small);
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 999px;
+	border: 1px solid var(--hair);
+	color: var(--fg-2);
+}
+
+:root[data-platform="win"] .pill {
+	border-radius: 4px;
+}
+
+.limit {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.limit-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.limit-pct {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.limit-meta {
+	font-size: var(--fs-small);
+	color: var(--fg-2);
+}
+
+.bar {
+	height: var(--bar-h);
+	border-radius: var(--bar-radius);
+	background: var(--track);
+	overflow: hidden;
+}
+
+.bar i {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--fg);
+	transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.error {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--fs-small);
+	color: var(--fg);
+	padding: 8px 10px;
+	border-radius: calc(var(--card-radius) - 6px);
+	border: 1px dashed var(--fg-3);
+}
+
+.error span {
+	flex: 1;
+}
+
+.foot {
+	display: flex;
+	justify-content: center;
+	font-size: var(--fs-small);
+	color: var(--fg-3);
+	padding-top: 2px;
+}
+
+/* ---------- empty state ---------- */
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 10px 6px 4px;
+	gap: 6px;
+}
+
+.empty h2 {
+	margin: 8px 0 0;
+	font-size: calc(var(--fs) + 3px);
+	letter-spacing: -0.01em;
+}
+
+.empty p {
+	margin: 0 0 8px;
+	color: var(--fg-2);
+	font-size: var(--fs-small);
+	max-width: 280px;
+}
+
+.empty .providers {
+	width: 100%;
+	text-align: left;
+}
+
+/* ---------- controls ---------- */
+
+.btn {
+	all: unset;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 6px 14px;
+	min-height: 30px;
+	border-radius: var(--ctl-radius);
+	background: var(--ctl-bg);
+	border: var(--ctl-border);
+	font-weight: 500;
+	text-align: center;
+	transition: background 0.15s, transform 0.1s;
+}
+
+.btn:hover {
+	background: var(--ctl-bg-hover);
+}
+
+.btn:active {
+	transform: scale(0.98);
+}
+
+.btn.primary {
+	background: var(--primary-bg);
+	color: var(--primary-fg);
+	border-color: transparent;
+}
+
+.btn.primary:hover {
+	background: rgb(var(--ink) / 0.75);
+}
+
+.btn.ghost {
+	background: transparent;
+	border-color: transparent;
+	color: var(--fg-2);
+}
+
+.btn.ghost:hover {
+	background: var(--ctl-bg-hover);
+	color: var(--fg);
+}
+
+.btn.danger {
+	background: var(--fg);
+	color: var(--primary-fg);
+}
+
+.btn.small {
+	padding: 3px 10px;
+	min-height: 24px;
+	font-size: var(--fs-small);
+}
+
+.providers {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.provider {
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.provider-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.methods {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.methods .btn {
+	flex: 1 1 auto;
+}
+
+.pending {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--fg-2);
+}
+
+.pending span:nth-child(2) {
+	flex: 1;
+}
+
+.spinner {
+	width: 14px;
+	height: 14px;
+	flex: none;
+	border-radius: 50%;
+	border: 2px solid var(--track);
+	border-top-color: var(--fg);
+	animation: spin 0.8s linear infinite;
+}
+
+/* ---------- settings ---------- */
+
+.group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.group h3 {
+	margin: 4px 4px 0;
+	font-size: var(--fs-small);
+	font-weight: 600;
+	color: var(--fg-2);
+	text-transform: none;
+}
+
+:root[data-platform="win"] .group h3 {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--fg);
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	padding: 4px 0;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	min-height: 40px;
+}
+
+.row + .row {
+	border-top: 1px solid var(--hair);
+}
+
+:root[data-platform="win"] .row + .row {
+	border-top-color: rgb(var(--ink) / 0.06);
+}
+
+.row-text {
+	flex: 1;
+	min-width: 0;
+}
+
+.list .name {
+	font-weight: 500;
+}
+
+.row-group + .row-group {
+	border-top: 1px solid var(--hair);
+}
+
+.row-body {
+	padding: 0 12px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.icon-btn.open .icon {
+	transform: rotate(45deg);
+}
+
+.icon-btn .icon {
+	transition: transform 0.2s;
+}
+
+.ring-slot {
+	display: grid;
+	place-items: center;
+	width: 22px;
+}
+
+.row .select {
+	flex: 1;
+	max-width: none;
+}
+
+.row .row-text + .select {
+	flex: 0 1 auto;
+}
+
+.hint {
+	padding: 0 12px 8px;
+	font-size: var(--fs-small);
+	color: var(--fg-2);
+}
+
+.segmented {
+	display: flex;
+	flex: 1;
+	padding: 2px;
+	gap: 2px;
+	border-radius: var(--ctl-radius);
+	background: rgb(var(--ink) / 0.07);
+}
+
+.seg {
+	all: unset;
+	flex: 1;
+	text-align: center;
+	padding: 4px 10px;
+	border-radius: var(--ctl-radius);
+	color: var(--fg-2);
+	font-weight: 500;
+	transition: background 0.15s, color 0.15s;
+}
+
+.seg.active {
+	background: var(--panel-bg);
+	background: rgb(255 255 255 / 0.95);
+	color: rgb(0 0 0 / 0.88);
+	box-shadow: 0 1px 3px rgb(0 0 0 / 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+	.seg.active {
+		background: rgb(255 255 255 / 0.2);
+		color: var(--fg);
+	}
+}
+
+.select {
+	appearance: none;
+	-webkit-appearance: none;
+	max-width: 190px;
+	font: inherit;
+	font-size: var(--fs-small);
+	color: var(--fg);
+	padding: 5px 28px 5px 10px;
+	border-radius: var(--ctl-radius);
+	background: var(--ctl-bg)
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+		no-repeat right 10px center;
+	border: var(--ctl-border);
+	text-overflow: ellipsis;
+}
+
+:root[data-platform="win"] .select {
+	font-size: 13px;
+	min-height: 32px;
+}
+
+/* Toggle switch: capsule on macOS, Fluent pill with a knob on Windows. */
+.switch {
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	flex: none;
+	width: 38px;
+	height: 22px;
+	margin: 0;
+	border-radius: 999px;
+	background: rgb(var(--ink) / 0.14);
+	transition: background 0.2s;
+}
+
+.switch::after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: white;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+	transition: transform 0.2s cubic-bezier(0.3, 0.7, 0.3, 1.3);
+}
+
+.switch:checked {
+	background: var(--fg);
+}
+
+.switch:checked::after {
+	transform: translateX(16px);
+	background: var(--primary-fg);
+}
+
+.quit {
+	width: 100%;
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="light dark" />
+		<title>AIUsageBar</title>
+		<script>
+			// Pick the platform skin before first paint to avoid a flash of the wrong style.
+			(function () {
+				var ua = navigator.userAgent;
+				document.documentElement.dataset.platform = /Mac/.test(ua) ? "mac" : /Windows/.test(ua) ? "win" : "linux";
+			})();
+		</script>
+		<link rel="stylesheet" href="index.css" />
+	</head>
+	<body>
+		<div id="app"></div>
+		<script src="index.js"></script>
+	</body>
+</html>
