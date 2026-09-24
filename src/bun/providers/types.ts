@@ -17,6 +17,12 @@ export interface ProviderContext {
 	/** Home directory; used to find CLI credential files. */
 	homeDir: string;
 	platform: NodeJS.Platform;
+	/**
+	 * True when an account of this provider is already connected. Providers
+	 * should then ask the identity provider to show its login / account picker
+	 * instead of silently reusing the browser session.
+	 */
+	addingAnother?: boolean;
 }
 
 export interface AuthResult {

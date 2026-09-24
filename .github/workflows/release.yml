@@ -106,6 +106,13 @@ jobs:
             | macOS (Apple Silicon) | `AIUsageBar-${{ needs.check.outputs.version }}-macos-arm64.dmg` |
             | Windows 10/11 (x64) | `AIUsageBar-${{ needs.check.outputs.version }}-windows-x64-Setup.zip` |
 
+            Already installed? AIUsageBar updates itself: open the popover and click **Update**.
+            The `stable-*` files are the in-app update feed; you don't need to download them.
+
+            One-line install without Gatekeeper / SmartScreen prompts:
+            - macOS: `curl -fsSL https://raw.githubusercontent.com/alxrepin/aiusagebar/main/scripts/install.sh | bash`
+            - Windows (PowerShell): `irm https://raw.githubusercontent.com/alxrepin/aiusagebar/main/scripts/install.ps1 | iex`
+
             **macOS:** the build is not notarised. After dragging it to Applications, run
             `xattr -dr com.apple.quarantine /Applications/AIUsageBar.app` once (or right-click → Open).
             **Windows:** SmartScreen may warn about an unknown publisher → *More info* → *Run anyway*.

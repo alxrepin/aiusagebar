@@ -48,6 +48,7 @@ const ICONS = {
 	close: "M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z",
 	power: "M13 3h-2v10h2V3zm4.83 2.17-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 1 1-11.42-5.42L6.17 5.17A9 9 0 1 0 21 12a8.97 8.97 0 0 0-3.17-6.83z",
 	plus: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z",
+	download: "M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z",
 };
 
 function icon(path: string, size = 16) {
@@ -180,7 +181,7 @@ function renderSummary() {
 					h(
 						"div",
 						{ class: "legend-text" },
-						h("div", { class: "legend-label" }, providerOf(r.providerId)?.displayName ?? r.providerId),
+						h("div", { class: "legend-label" }, ringOwner(r.providerId, r.ref.accountId)),
 						h("div", { class: "legend-sub" }, legendSub(r)),
 					),
 					h("div", { class: "legend-value" }, r.progress === null ? "–" : pct(r.progress * 100)),
@@ -221,20 +222,35 @@ function renderAccountCard(a: AccountInfo) {
 					"div",
 					{ class: "error" },
 					h("span", null, status.message),
-					status.needsReauth
-						? h(
-								"button",
-								{
-									class: "btn small",
-									onClick: () => startAuth(a.providerId, a.authMethod),
-								},
-								t("reconnect"),
-							)
-						: null,
+					status.needsReauth ? renderReauthButtons(a, p) : null,
 				)
 			: null,
 		...(limits.length ? limits : status.state !== "error" ? [h("div", { class: "limit-meta" }, status.state === "loading" ? t("loading") : t("noData"))] : []),
 	);
+}
+
+/** "Sign in again" for OAuth accounts; CLI-linked ones also get a browser sign-in fallback. */
+function renderReauthButtons(a: AccountInfo, p: ProviderInfo | undefined) {
+	const own = p?.authMethods.find((m) => m.id === a.authMethod);
+	const browser = p?.authMethods.find((m) => m.kind === "browser");
+	if (!own || own.kind === "browser" || !browser) {
+		return h("button", { class: "btn small", onClick: () => startAuth(a.providerId, a.authMethod) }, t("reconnect"));
+	}
+	return h(
+		"div",
+		{ class: "reauth" },
+		h("button", { class: "btn small primary", onClick: () => startAuth(a.providerId, browser.id) }, t("signInBrowser")),
+		h("button", { class: "btn small", title: own.description, onClick: () => startAuth(a.providerId, own.id) }, t("reconnect")),
+	);
+}
+
+/** Provider name, plus the account when several accounts of that provider are connected. */
+function ringOwner(providerId: string, accountId: string) {
+	const name = providerOf(providerId)?.displayName ?? providerId;
+	const same = state!.accounts.filter((a) => a.providerId === providerId);
+	if (same.length < 2) return name;
+	const label = state!.accounts.find((a) => a.id === accountId)?.label ?? "";
+	return `${name} · ${label.split("@")[0]}`;
 }
 
 function renderEmpty() {
@@ -248,11 +264,36 @@ function renderEmpty() {
 	);
 }
 
+function renderUpdateBanner() {
+	const u = state!.update;
+	const visible = ["available", "downloading", "installing"].includes(u?.status) || (u?.status === "error" && !!u.availableVersion);
+	if (!visible) return null;
+	const busy = u.status === "downloading" || u.status === "installing";
+	const text =
+		u.status === "downloading"
+			? t("updateDownloading")
+			: u.status === "installing"
+				? t("updateInstalling")
+				: u.status === "error"
+					? t("updateFailed", { e: u.error ?? "" })
+					: u.availableVersion
+						? t("updateAvailable", { v: u.availableVersion })
+						: t("updateAvailableNoVersion");
+	return h(
+		"div",
+		{ class: "banner glass" },
+		busy ? h("span", { class: "spinner" }) : icon(ICONS.download),
+		h("span", { class: "banner-text" }, text),
+		busy ? null : h("button", { class: "btn small primary", onClick: () => act(() => bridge.request.installUpdate({})) }, t("updateNow")),
+	);
+}
+
 function renderMain() {
 	const s = state!;
-	if (!s.accounts.length) return [renderHeader(), renderEmpty()];
+	if (!s.accounts.length) return [renderHeader(), renderUpdateBanner(), renderEmpty()];
 	return [
 		renderHeader(),
+		renderUpdateBanner(),
 		renderSummary(),
 		h("div", { class: "cards" }, ...s.accounts.map(renderAccountCard)),
 		h("footer", { class: "foot" }, t("updated", { t: formatAgo(s.lastRefreshAt) })),
@@ -336,7 +377,15 @@ function renderAddProviderRows() {
 						icon(ICONS.plus),
 					),
 				),
-				open ? h("div", { class: "row-body" }, renderAuthMethods(p), authErrors[p.id] ? h("div", { class: "error" }, authErrors[p.id]) : null) : null,
+				open
+					? h(
+							"div",
+							{ class: "row-body" },
+							state!.accounts.some((a) => a.providerId === p.id) ? h("div", { class: "hint flush" }, t("anotherAccountHint")) : null,
+							renderAuthMethods(p),
+							authErrors[p.id] ? h("div", { class: "error" }, authErrors[p.id]) : null,
+						)
+					: null,
 			);
 		}),
 	);
@@ -380,6 +429,46 @@ function ringOptions(): Array<[string, string]> {
 		for (const w of windows) opts.push([`${a.id}|${w.id}`, `${p}${multi ? ` (${a.label})` : ""} · ${w.label}`]);
 	}
 	return opts;
+}
+
+function renderAbout() {
+	const u = state!.update;
+	const status =
+		u.status === "checking"
+			? t("checking")
+			: u.status === "none"
+				? t("upToDate")
+				: u.status === "available"
+					? t("updateAvailable", { v: u.availableVersion ?? "" })
+					: u.status === "error"
+						? t("updateFailed", { e: u.error ?? "" })
+						: "";
+	return h(
+		"section",
+		{ class: "group" },
+		h("h3", null, t("about")),
+		h(
+			"div",
+			{ class: "list glass" },
+			h(
+				"div",
+				{ class: "row" },
+				h(
+					"div",
+					{ class: "row-text" },
+					h("div", { class: "name" }, t("version", { v: u.currentVersion || "—" })),
+					status ? h("div", { class: "sub" }, status) : null,
+				),
+				u.status === "available"
+					? h("button", { class: "btn small primary", onClick: () => act(() => bridge.request.installUpdate({})) }, t("updateNow"))
+					: h(
+							"button",
+							{ class: "btn small", disabled: u.status === "checking" || u.status === "downloading", onClick: () => act(() => bridge.request.checkForUpdates({})) },
+							t("checkUpdates"),
+						),
+			),
+		),
+	);
 }
 
 /** Preset thresholds, plus the current value if it was set to something custom. */
@@ -551,6 +640,7 @@ function renderSettings() {
 						),
 			),
 		),
+		renderAbout(),
 		h(
 			"footer",
 			{ class: "foot" },

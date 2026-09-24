@@ -97,6 +97,35 @@ describe("ChatGPT provider", () => {
 		expect(r.credentials).toMatchObject({ accessToken: "fresh", refreshToken: "rt2" });
 	});
 
+	test("403 also triggers a token refresh before giving up", async () => {
+		const p = new ChatGptProvider();
+		const c = ctx((url, init) => {
+			if (url.endsWith("/oauth/token")) return Response.json({ access_token: "fresh" });
+			return new Headers(init?.headers).get("authorization") === "Bearer fresh"
+				? Response.json({ rate_limit: {} })
+				: new Response("", { status: 403 });
+		});
+		const r = await p.fetchUsage({ source: "oauth", accessToken: "stale", refreshToken: "rt" }, c);
+		expect(r.credentials).toMatchObject({ accessToken: "fresh" });
+	});
+
+	test("adding a second account forces the login screen", async () => {
+		await Bun.sleep(700); // let the previous test release port 1455
+		const p = new ChatGptProvider();
+		let opened = "";
+		const ac = new AbortController();
+		const c = ctx(() => new Response("", { status: 500 }), {
+			addingAnother: true,
+			signal: ac.signal,
+			openUrl: (u) => {
+				opened = u;
+				ac.abort();
+			},
+		});
+		await expect(p.authenticate("oauth", c)).rejects.toThrow();
+		expect(new URL(opened).searchParams.get("prompt")).toBe("login");
+	});
+
 	test("linked Codex login is read from ~/.codex/auth.json", async () => {
 		const p = new ChatGptProvider();
 		const c = ctx((_, init) => {

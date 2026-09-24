@@ -106,6 +106,16 @@ export interface ResolvedRing {
 	resetsAt?: string;
 }
 
+export interface UpdateState {
+	/** Version of the running app. */
+	currentVersion: string;
+	status: "idle" | "checking" | "none" | "available" | "downloading" | "installing" | "error";
+	/** Version offered by the update feed, when one is available. */
+	availableVersion?: string;
+	error?: string;
+	checkedAt?: string;
+}
+
 export interface AppState {
 	platform: "mac" | "win" | "linux";
 	providers: ProviderInfo[];
@@ -117,4 +127,5 @@ export interface AppState {
 	/** Ids of auth flows currently waiting for the browser, keyed by provider. */
 	pendingAuth: Record<string, string | undefined>;
 	lastRefreshAt?: string;
+	update: UpdateState;
 }

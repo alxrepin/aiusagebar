@@ -52,7 +52,12 @@ const state = (): AppState => ({
 	settings,
 	pendingAuth: {},
 	lastRefreshAt: new Date(Date.now() - 90_000).toISOString(),
+	update,
 });
+
+let update: AppState["update"] = q.get("update")
+	? { currentVersion: "0.2.0", status: "available", availableVersion: "0.3.0" }
+	: { currentVersion: "0.2.0", status: "none" };
 
 export function createBridge(): Bridge {
 	const ok = async () => state();
@@ -77,6 +82,8 @@ export function createBridge(): Bridge {
 				return state();
 			},
 			openUrl: async () => {},
+			checkForUpdates: ok,
+			installUpdate: async () => ((update = { ...update, status: "downloading" }), state()),
 			quit: async () => {},
 		},
 		send: { resize: ({ height }) => ((window as unknown as { __height: number }).__height = height), hide: () => {} },
