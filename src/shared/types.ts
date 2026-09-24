@@ -92,6 +92,8 @@ export interface Settings {
 	alertsEnabled: boolean;
 	/** Notify when less than this share (percent) of a limit is left. */
 	alertThreshold: number;
+	/** Start AIUsageBar when the user logs in. */
+	launchAtLogin: boolean;
 }
 
 /** A ring after resolution: what is actually drawn. */

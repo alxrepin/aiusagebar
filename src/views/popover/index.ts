@@ -603,6 +603,17 @@ function renderSettings() {
 				"div",
 				{ class: "list glass" },
 				h(
+					"label",
+					{ class: "row" },
+					h("div", { class: "row-text" }, h("div", { class: "name" }, t("launchAtLogin"))),
+					h("input", {
+						type: "checkbox",
+						class: "switch",
+						checked: s.settings.launchAtLogin,
+						onChange: (e: Event) => act(() => bridge.request.updateSettings({ launchAtLogin: (e.target as HTMLInputElement).checked })),
+					}),
+				),
+				h(
 					"div",
 					{ class: "row" },
 					h("div", { class: "row-text" }, h("div", { class: "name" }, t("refreshEvery"))),

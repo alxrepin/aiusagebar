@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	showPercentInMenuBar: false,
 	alertsEnabled: true,
 	alertThreshold: 15,
+	launchAtLogin: true,
 };
 
 export interface ConfigFile {
@@ -67,6 +68,7 @@ export function normalizeSettings(raw: Partial<Settings> | undefined): Settings 
 	if (s.ringMode !== "auto" && s.ringMode !== "custom") s.ringMode = "auto";
 	if (!["auto", "light", "dark"].includes(s.iconTheme)) s.iconTheme = "auto";
 	s.alertsEnabled = s.alertsEnabled !== false;
+	s.launchAtLogin = s.launchAtLogin !== false;
 	s.alertThreshold = Math.min(99, Math.max(1, Math.round(Number(s.alertThreshold) || DEFAULT_SETTINGS.alertThreshold)));
 	const rings = Array.isArray(s.rings) ? s.rings.slice(0, 3) : [];
 	while (rings.length < 3) rings.push(null);

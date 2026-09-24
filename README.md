@@ -46,6 +46,7 @@ The tray icon shows how much of each limit you have used: the fuller the ring, t
 - **Background refresh** every 1–30 minutes, plus an instant refresh when you open the popover. Errors and rate limits back off exponentially.
 - **Multiple providers and accounts**, including several accounts of the same provider (e.g. work and personal Claude), added and removed in two clicks.
 - **Self-healing connections.** Expired tokens are refreshed automatically (on 401 and 403). If a sign-in really is gone, the card shows "Sign in again" and you get a single notification. After sleep or a network change the data refreshes right away.
+- **Starts with your computer** (can be turned off in Settings).
 - **Automatic updates.** The app checks GitHub Releases every few hours, shows an "Update" button and restarts into the new version.
 - **Feels native:** Liquid Glass on macOS, Fluent on Windows 11, light and dark themes.
 - **Lightweight.** Built with [Electrobun](https://electrobun.dev) and the system WebView, no bundled Chromium.
@@ -144,6 +145,7 @@ The gear icon in the popover opens Settings:
 - **Accounts:** connected accounts, remove, add new;
 - **Rings:** "Auto" or "Custom" — pick the metric for the outer, middle and inner ring;
 - **Notifications:** turn low-limit alerts on or off and choose the threshold — 5, 10, 15, 20, 25, 30 or 50% left (default 15%);
+- **Launch at login:** on by default;
 - **Refresh every** 1, 2, 5, 10, 15 or 30 minutes;
 - **Tray icon** (Windows / Linux): match taskbar, white or black;
 - **% in menu bar** (macOS): show a percentage next to the icon.
@@ -230,9 +232,9 @@ Apple signing and notarisation are optional. To enable them, add `ELECTROBUN_DEV
 
 ### Known limitations
 
-- **No blur behind the window.** Liquid Glass is done in CSS; Electrobun 1.x can't blur the desktop behind a window (`NSGlassEffectView`, Mica/Acrylic).
+- **No blur behind the window.** Liquid Glass is done in CSS with a near-opaque tint; Electrobun 1.x can't blur the desktop behind a window (`NSGlassEffectView`, Mica/Acrylic), and CSS `backdrop-filter` in a transparent WebView flickers, so it isn't used.
 - **Linux.** Many AppIndicator implementations don't deliver plain clicks, so the icon has a menu.
-- **Not yet:** launch at login and an Intel Mac build.
+- **Not yet:** an Intel Mac build.
 - Versions before 0.3.0 have no updater: install 0.3.0 once, updates are automatic from then on.
 
 ## License
