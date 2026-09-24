@@ -28,7 +28,18 @@ function h(tag: string, props: Props | null = null, ...children: Child[]): HTMLE
 		else el.setAttribute(k, v === true ? "" : String(v));
 	}
 	for (const c of children) if (c !== null && c !== undefined && c !== false) el.append(c);
+	if (el.classList.contains("spinner")) syncAnimation(el, 800);
 	return el;
+}
+
+/**
+ * The popover re-renders its DOM on every state push (e.g. each download
+ * percent), which would restart CSS animations and make spinners jerk.
+ * A negative delay derived from the clock puts a freshly created element at
+ * the same phase as the one it replaces, so the rotation looks continuous.
+ */
+function syncAnimation(el: Element, periodMs: number) {
+	(el as HTMLElement | SVGElement).style.animationDelay = `-${Math.round(performance.now() % periodMs)}ms`;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -152,7 +163,11 @@ function renderHeader() {
 								});
 							},
 						},
-						icon(ICONS.refresh),
+						(() => {
+							const i = icon(ICONS.refresh);
+							if (loading) syncAnimation(i, 900);
+							return i;
+						})(),
 					)
 				: null,
 			h("button", { class: "icon-btn", title: t("settings"), onClick: () => go("settings") }, icon(ICONS.gear)),
@@ -499,7 +514,15 @@ function renderUpdateProgress(u: AppState["update"]) {
 	return h(
 		"div",
 		{ class: "update-progress" },
-		h("div", { class: known ? "bar" : "bar indeterminate" }, h("i", { style: known ? `width:${u.progress}%` : "" })),
+		h(
+			"div",
+			{ class: known ? "bar" : "bar indeterminate" },
+			(() => {
+				const fill = h("i", { style: known ? `width:${u.progress}%` : "" });
+				if (!known) syncAnimation(fill, 1100);
+				return fill;
+			})(),
+		),
 	);
 }
 

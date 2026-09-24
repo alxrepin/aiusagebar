@@ -12,6 +12,8 @@
 
 	--ink: 0 0 0;
 	--fg: rgb(var(--ink) / 0.88);
+	/* Fully opaque ink for data marks (ring fills, progress bars) so they read clearly. */
+	--solid: rgb(var(--ink));
 	--fg-2: rgb(var(--ink) / 0.56);
 	--fg-3: rgb(var(--ink) / 0.36);
 	--hair: rgb(var(--ink) / 0.1);
@@ -301,6 +303,7 @@ body {
 .rings {
 	display: block;
 	flex: none;
+	color: var(--solid);
 }
 
 .rings .track,
@@ -470,7 +473,7 @@ body {
 	display: block;
 	height: 100%;
 	border-radius: inherit;
-	background: var(--bar-color, var(--fg));
+	background: var(--bar-color, var(--solid));
 	transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
