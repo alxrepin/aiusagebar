@@ -1,3 +1,5 @@
+// Must be first: DPI awareness has to be set before any window exists.
+import "./system/dpi";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { Updater, Utils } from "electrobun/bun";

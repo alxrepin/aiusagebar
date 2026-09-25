@@ -23,6 +23,10 @@ export class Popover {
 	private hiddenAt = 0;
 	private height = 420;
 	private anchorTray: Rect = { x: 0, y: 0, width: 0, height: 0 };
+	/** Cursor at the moment the popover opened (the tray click). */
+	private anchorCursor = { x: 0, y: 0 };
+	/** Windows: physical pixels per CSS pixel on the popover's display. */
+	private scale = 1;
 	private rpc;
 	private shownAt = 0;
 	/** Windows: stops the outside-click watcher that dismisses the popover. */
@@ -150,6 +154,9 @@ export class Popover {
 
 	show() {
 		this.anchorTray = this.getTrayBounds();
+		// Freeze the anchor: re-reading the cursor on later resizes (it's inside
+		// the popover by then) made the window jump when switching views.
+		this.anchorCursor = Screen.getCursorScreenPoint();
 		this.place();
 		this.visible = true;
 		this.shownAt = Date.now();
@@ -180,11 +187,11 @@ export class Popover {
 		if (height === this.height) return;
 		this.height = height;
 		if (this.visible) this.place();
-		else this.win.setSize(WIDTH, height);
+		else this.win.setSize(Math.round(WIDTH * this.scale), Math.round(height * this.scale));
 	}
 
 	private place() {
-		const cursor = Screen.getCursorScreenPoint();
+		const cursor = this.anchorCursor;
 		const displays = Screen.getAllDisplays();
 		const probe = this.anchorTray.width ? this.anchorTray : { ...cursor, width: 1, height: 1 };
 		const display =
@@ -196,14 +203,20 @@ export class Popover {
 					probe.y < d.bounds.y + d.bounds.height,
 			) ?? Screen.getPrimaryDisplay();
 
+		// Windows (per-monitor DPI aware, see system/dpi.ts): frames are physical
+		// pixels, while WebView2 lays the page out in scaled CSS pixels.
+		this.scale = this.platform === "win" ? display.scaleFactor || 1 : 1;
+		const width = Math.round(WIDTH * this.scale);
+		const height = Math.round(this.height * this.scale);
 		const { x, y } = popoverPosition({
 			platform: this.platform,
 			tray: this.anchorTray,
 			cursor,
 			display: display.bounds,
 			workArea: display.workArea.width ? display.workArea : display.bounds,
-			size: { width: WIDTH, height: this.height },
+			size: { width, height },
+			gap: Math.round(6 * this.scale),
 		});
-		this.win.setFrame(x, y, WIDTH, this.height);
+		this.win.setFrame(x, y, width, height);
 	}
 }

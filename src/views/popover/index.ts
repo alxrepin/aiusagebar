@@ -435,9 +435,128 @@ function segmented<T extends string>(value: T, options: Array<[T, string]>, onCh
 }
 
 function select(value: string, options: Array<[string, string]>, onChange: (v: string) => void) {
+	// Windows' native <select> popup is a square, always-light Win32 list; draw our own there.
+	if (state?.platform === "win") return fluentSelect(value, options, onChange);
 	const el = h("select", { class: "select", onChange: (e: Event) => onChange((e.target as HTMLSelectElement).value) }) as HTMLSelectElement;
 	for (const [v, label] of options) el.append(h("option", { value: v, selected: v === value }, label));
 	return el;
+}
+
+// ---- Fluent dropdown (Windows) -------------------------------------------------
+
+let openMenu: { close: () => void } | null = null;
+
+function fluentSelect(value: string, options: Array<[string, string]>, onChange: (v: string) => void) {
+	const current = options.find(([v]) => v === value)?.[1] ?? options[0]?.[1] ?? "";
+	const button = h(
+		"button",
+		{
+			class: "select fluent-select",
+			type: "button",
+			"aria-haspopup": "listbox",
+			"aria-expanded": "false",
+			title: current,
+			onClick: (e: Event) => {
+				e.stopPropagation();
+				if (openMenu) return openMenu.close();
+				showMenu(button, value, options, onChange);
+			},
+		},
+		h("span", { class: "fluent-select-label" }, current),
+	);
+	return button;
+}
+
+function showMenu(anchor: HTMLElement, value: string, options: Array<[string, string]>, onChange: (v: string) => void) {
+	const menu = h("div", { class: "fluent-menu", role: "listbox" });
+	let active = Math.max(0, options.findIndex(([v]) => v === value));
+
+	const items = options.map(([v, label], i) =>
+		h(
+			"div",
+			{
+				class: v === value ? "fluent-option selected" : "fluent-option",
+				role: "option",
+				"aria-selected": String(v === value),
+				title: label,
+				onMouseenter: () => setActive(i),
+				onClick: (e: Event) => {
+					e.stopPropagation();
+					pick(i);
+				},
+			},
+			label,
+		),
+	);
+	menu.append(...items);
+
+	function setActive(i: number) {
+		items[active]?.classList.remove("active");
+		active = (i + items.length) % items.length;
+		items[active]?.classList.add("active");
+		items[active]?.scrollIntoView({ block: "nearest" });
+	}
+	function pick(i: number) {
+		const v = options[i]?.[0];
+		close();
+		if (v !== undefined && v !== value) onChange(v);
+	}
+	function close() {
+		menu.remove();
+		anchor.setAttribute("aria-expanded", "false");
+		document.removeEventListener("mousedown", onOutside, true);
+		document.removeEventListener("keydown", onKey, true);
+		scroller.removeEventListener("scroll", close);
+		if (openMenu === handle) openMenu = null;
+	}
+	function onOutside(e: MouseEvent) {
+		if (!menu.contains(e.target as Node) && !anchor.contains(e.target as Node)) close();
+	}
+	function onKey(e: KeyboardEvent) {
+		const keys: Record<string, () => void> = {
+			ArrowDown: () => setActive(active + 1),
+			ArrowUp: () => setActive(active - 1),
+			Enter: () => pick(active),
+			" ": () => pick(active),
+			Escape: close,
+			Tab: close,
+		};
+		const fn = keys[e.key];
+		if (!fn) return;
+		if (e.key !== "Tab") {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		fn();
+	}
+
+	document.body.append(menu);
+	// Open below the control when it fits, otherwise above; never outside the window.
+	const r = anchor.getBoundingClientRect();
+	const margin = 6;
+	const width = Math.max(r.width, 160);
+	menu.style.minWidth = `${width}px`;
+	menu.style.left = `${Math.max(margin, Math.min(window.innerWidth - margin - menu.offsetWidth, r.right - menu.offsetWidth))}px`;
+	const below = window.innerHeight - r.bottom - margin * 2;
+	const above = r.top - margin * 2;
+	const natural = menu.scrollHeight;
+	if (natural <= below || below >= above) {
+		menu.style.top = `${r.bottom + 4}px`;
+		menu.style.maxHeight = `${below}px`;
+	} else {
+		const height = Math.min(natural, above);
+		menu.style.top = `${r.top - 4 - height}px`;
+		menu.style.maxHeight = `${above}px`;
+	}
+	setActive(active);
+	anchor.setAttribute("aria-expanded", "true");
+
+	document.addEventListener("mousedown", onOutside, true);
+	document.addEventListener("keydown", onKey, true);
+	scroller.addEventListener("scroll", close);
+	const handle = { close };
+	openMenu?.close();
+	openMenu = handle;
 }
 
 function ringOptions(): Array<[string, string]> {
@@ -883,6 +1002,7 @@ bridge.on("events", {
 	shown: () => {
 		// Give the page keyboard/wheel focus (Windows doesn't always hand it over).
 		window.focus();
+		openMenu?.close();
 		if (view !== "main") go("main");
 	},
 });
