@@ -145,6 +145,16 @@
 }
 
 
+:root {
+	--menu-bg: rgb(249 249 249);
+	--menu-border: rgb(0 0 0 / 0.08);
+}
+
+:root[data-theme="dark"] {
+	--menu-bg: rgb(44 44 44);
+	--menu-border: rgb(255 255 255 / 0.08);
+}
+
 /* The Windows popover is an opaque, native-shaped window (Electrobun's
    transparent windows break hit-testing there), so the panel fills it edge
    to edge; Windows 11 rounds the corners and draws the border itself. */
@@ -820,6 +830,91 @@ body {
 :root[data-platform="win"] .select {
 	font-size: 13px;
 	min-height: 32px;
+}
+
+/* Windows: our own Fluent dropdown instead of the native Win32 list. */
+.fluent-select {
+	display: inline-flex;
+	align-items: center;
+	min-width: 0;
+	text-align: left;
+	cursor: default;
+}
+
+.fluent-select-label {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.fluent-select:hover {
+	background-color: var(--ctl-bg-hover);
+}
+
+.fluent-select[aria-expanded="true"] {
+	background-color: rgb(var(--ink) / 0.04);
+}
+
+.fluent-menu {
+	position: fixed;
+	z-index: 100;
+	box-sizing: border-box;
+	max-width: calc(100vw - 12px);
+	overflow-y: auto;
+	scrollbar-width: none;
+	padding: 4px;
+	border-radius: 8px;
+	background: var(--menu-bg);
+	border: 1px solid var(--menu-border);
+	box-shadow: 0 8px 16px rgb(0 0 0 / 0.14), 0 0 2px rgb(0 0 0 / 0.12);
+	font-size: 13px;
+	animation: menu-in 0.12s ease-out;
+}
+
+.fluent-menu::-webkit-scrollbar {
+	display: none;
+}
+
+@keyframes menu-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+}
+
+.fluent-option {
+	position: relative;
+	padding: 7px 12px 7px 14px;
+	border-radius: 4px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--fg);
+}
+
+.fluent-option.active {
+	background: rgb(var(--ink) / 0.06);
+}
+
+.fluent-option.selected {
+	background: rgb(var(--ink) / 0.06);
+}
+
+/* Fluent's selection pill on the left edge. */
+.fluent-option.selected::before {
+	content: "";
+	position: absolute;
+	left: 3px;
+	top: 50%;
+	width: 3px;
+	height: 16px;
+	margin-top: -8px;
+	border-radius: 2px;
+	background: var(--solid);
+}
+
+.fluent-option.selected.active {
+	background: rgb(var(--ink) / 0.09);
 }
 
 /* Toggle switch: capsule on macOS, Fluent pill with a knob on Windows. */
