@@ -7,6 +7,7 @@ import { isRu } from "../i18n";
 import { setStatusItemTemplateImage } from "./macStatusImage";
 import { encodeIco } from "./png";
 import { hexToRgb, renderRingsPng, type RGB } from "./ringsIcon";
+import { latestOnly } from "../util/latestOnly";
 import { trayTooltip } from "./tooltip";
 import { setTrayTooltip } from "./winTrayTip";
 
@@ -56,7 +57,17 @@ export class TrayController {
 		return png(LOGICAL_SIZE[this.platform] * 2, 144);
 	}
 
-	async update(state: AppState) {
+	/**
+	 * Updates are async (file writes, theme lookup) and used to overlap and
+	 * finish out of order, leaving a stale percentage/icon behind (e.g. 0%
+	 * after 1%). Now they run one at a time and always draw the newest state.
+	 */
+	readonly update = latestOnly<AppState>(
+		(state) => this.apply(state),
+		(err) => console.warn("[tray] update failed:", err),
+	);
+
+	private async apply(state: AppState) {
 		const progress = state.rings.map((r) => r.progress);
 		const colors = state.rings.map((r) => (r.color ? hexToRgb(r.color) : null));
 		const colored = colors.some(Boolean);
