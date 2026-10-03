@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Tray } from "electrobun/bun";
 import type { AppState, IconTheme } from "../../shared/types";
 import { isRu } from "../i18n";
-import { setStatusItemTemplateImage, setStatusItemTitle } from "./macStatusImage";
+import { redrawStatusItem, setStatusItemTemplateImage } from "./macStatusImage";
 import { encodeIco } from "./png";
 import { hexToRgb, renderRingsPng, type RGB } from "./ringsIcon";
 import { latestOnly } from "../util/latestOnly";
@@ -106,7 +106,8 @@ export class TrayController {
 			const first = state.rings[0];
 			const title =
 				state.settings.showPercentInMenuBar && first?.progress != null ? ` ${Math.round(first.progress * 100)}%` : "";
-			if (!setStatusItemTitle(this.tray.ptr, title)) this.tray.setTitle(title);
+			this.tray.setTitle(title);
+			redrawStatusItem(this.tray.ptr);
 		}
 	}
 
