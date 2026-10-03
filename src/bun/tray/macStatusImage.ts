@@ -102,3 +102,29 @@ export function setStatusItemTemplateImage(
 		return false;
 	}
 }
+
+/**
+ * Sets the status item's text (the "36%" next to the icon) on the main thread.
+ * Electrobun's Tray.setTitle() assigns button.title from Bun's thread; AppKit
+ * doesn't reliably redraw off-main-thread changes, so after sleep/wake the
+ * menu bar could keep showing an old percentage.
+ */
+export function setStatusItemTitle(statusItem: Pointer | null, title: string): boolean {
+	const o = load();
+	if (!o || !statusItem) return false;
+	try {
+		const NSString = o.cls("NSString");
+		if (!NSString) return false;
+		const str = o.sendPtr(o.send(NSString, o.sel("alloc"))!, o.sel("initWithUTF8String:"), cstr(title));
+		if (!str) return false;
+		const button = o.send(statusItem, o.sel("button"));
+		if (button) {
+			o.sendOnMain(button, o.sel("performSelectorOnMainThread:withObject:waitUntilDone:"), o.sel("setTitle:"), str, true);
+		}
+		o.send(str, o.sel("release"));
+		return !!button;
+	} catch (err) {
+		console.warn("[tray] native title failed:", err);
+		return false;
+	}
+}
